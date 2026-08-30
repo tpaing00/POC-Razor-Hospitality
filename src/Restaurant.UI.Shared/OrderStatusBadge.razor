@@ -1,0 +1,23 @@
+﻿@using Restaurant.Shared.Models
+
+<span class="badge @GetBadgeClass()">@Status.ToString()</span>
+
+@code {
+    [Parameter]
+    public OrderStatus Status { get; set; }
+
+    private string GetBadgeClass()
+    {
+        return Status switch
+        {
+            OrderStatus.Pending => "bg-warning",
+            OrderStatus.Confirmed => "bg-info",
+            OrderStatus.Preparing => "bg-primary",
+            OrderStatus.Ready => "bg-success",
+            OrderStatus.Served => "bg-success",
+            OrderStatus.Completed => "bg-secondary",
+            OrderStatus.Cancelled => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

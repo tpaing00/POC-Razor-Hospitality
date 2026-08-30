@@ -1,0 +1,59 @@
+﻿@page "/menu"
+@rendermode InteractiveServer
+@using Restaurant.Shared.Models.Dtos
+@using Restaurant.UI.Shared.Services
+@using Restaurant.UI.Shared
+@inject RestaurantApiService ApiService
+
+<PageTitle>Menu Management</PageTitle>
+
+<h3>Menu Management</h3>
+
+@if (isLoading)
+{
+    <p>Loading menu...</p>
+}
+else if (menuItems.Count == 0)
+{
+    <p>No menu items found.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var category in menuItems.GroupBy(m => m.Category))
+        {
+            <div class="col-12 mb-4">
+                <h4>@category.Key</h4>
+                <div class="row">
+                    @foreach (var item in category)
+                    {
+                        <div class="col-md-4">
+                            <MenuItemCard MenuItem="@item" ShowAddButton="false" />
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<MenuItemDto> menuItems = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            menuItems = await ApiService.GetMenuItemsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading menu: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

@@ -1,0 +1,165 @@
+﻿@page "/orders"
+@rendermode InteractiveServer
+@using Restaurant.Shared.Models
+@using Restaurant.Shared.Models.Dtos
+@using Restaurant.UI.Shared.Services
+@using Restaurant.UI.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+@inject RestaurantApiService ApiService
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<PageTitle>Orders</PageTitle>
+
+<h3>Order Management</h3>
+
+<div class="mb-3">
+    <label>Filter by Status:</label>
+    <select class="form-select" @onchange="OnStatusFilterChanged">
+        <option value="">All Orders</option>
+        <option value="@OrderStatus.Pending">Pending</option>
+        <option value="@OrderStatus.Confirmed">Confirmed</option>
+        <option value="@OrderStatus.Preparing">Preparing</option>
+        <option value="@OrderStatus.Ready">Ready</option>
+        <option value="@OrderStatus.Served">Served</option>
+        <option value="@OrderStatus.Completed">Completed</option>
+    </select>
+</div>
+
+@if (isLoading)
+{
+    <p>Loading orders...</p>
+}
+else if (filteredOrders.Count == 0)
+{
+    <p>No orders found.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var order in filteredOrders)
+        {
+            <div class="col-md-6">
+                <OrderCard Order="@order"
+                           ShowActions="true"
+                           OnStatusChanged="@(async (status) => await UpdateOrderStatus(order.Id, status))" />
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<OrderDto> orders = new();
+    private List<OrderDto> filteredOrders = new();
+    private bool isLoading = true;
+    private OrderStatus? statusFilter;
+    private HubConnection? hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+        await InitializeSignalR();
+    }
+
+    private async Task LoadOrders()
+    {
+        try
+        {
+            orders = await ApiService.GetOrdersAsync();
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading orders: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task InitializeSignalR()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("http://192.168.1.89:5000/hubs/orders", options =>
+            {
+                options.HttpMessageHandlerFactory = (handler) =>
+                {
+                    if (handler is HttpClientHandler clientHandler)
+                    {
+                        clientHandler.ServerCertificateCustomValidationCallback =
+                            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                    }
+                    return handler;
+                };
+            })
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<int, string>("ReceiveNewOrder", async (orderId, orderNumber) =>
+        {
+            Console.WriteLine($"New order received: {orderNumber}");
+            await LoadOrders();
+            StateHasChanged();
+        });
+
+        hubConnection.On<int, string>("ReceiveOrderStatusUpdate", async (orderId, status) =>
+        {
+            Console.WriteLine($"Order {orderId} status updated to {status}");
+            await LoadOrders();
+            StateHasChanged();
+        });
+
+        try
+        {
+            await hubConnection.StartAsync();
+            Console.WriteLine("SignalR connected successfully!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"SignalR connection failed: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+    }
+
+    private async Task UpdateOrderStatus(int orderId, OrderStatus newStatus)
+    {
+        try
+        {
+            await ApiService.UpdateOrderStatusAsync(orderId, newStatus);
+            await LoadOrders();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating order status: {ex.Message}");
+        }
+    }
+
+    private void OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        if (string.IsNullOrEmpty(e.Value?.ToString()))
+        {
+            statusFilter = null;
+        }
+        else
+        {
+            statusFilter = Enum.Parse<OrderStatus>(e.Value.ToString()!);
+        }
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        filteredOrders = statusFilter.HasValue
+            ? orders.Where(o => o.Status == statusFilter.Value).ToList()
+            : orders;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
