@@ -4,7 +4,7 @@ C:\Code\POC-Razor-Hospitality\Restaurant\
     ├── Restaurant.Shared\           (Domain models, DTOs, interfaces)
     │   ├── Restaurant.Shared.csproj
     │   ├── Class1.cs (can delete)
-    │   └── Models\                  (we're creating now)
+    │   └── Models\                 
     │       ├── OrderStatus.cs
     │       └── Dtos\
     │
@@ -29,3 +29,20 @@ C:\Code\POC-Razor-Hospitality\Restaurant\
         ├── MauiProgram.cs
         ├── App.xaml
         └── Resources\
+
+
+Restaurant.sln
+Restaurant.Api (ASP.NET Core Web API + SignalR + EF Core DbContext + Migrations)
+Restaurant.Mobile (MAUI Blazor Hybrid app) using local EF Core SQLite and remote sync via Web API + SignalR client
+Restaurant.Blazor (Blazor Interactive) — back office UI calling API
+Restaurant.Shared (class library with DTOs/entities and interfaces)
+Restaurant.UI.Shared (Razor Class Library for shared UI components)
+
+
+Key Files
+src/Restaurant.Api/Startup/Program.cs - configure services, EF, SignalR
+src/Restaurant.Api/Data/RestaurantDbContext.cs - EF Core models & migrations
+src/Restaurant.Api/Hubs/OrdersHub.cs - SignalR hub
+src/Restaurant.Shared/Models/*.cs - shared entity/DTO definitions
+src/Restaurant.UI.Shared - Razor components (order list, order editor)
+src/Restaurant.Mobile/MainPage.razor / MauiProgram.cs - BlazorWebView and local DB setup
