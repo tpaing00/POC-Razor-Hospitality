@@ -34,7 +34,7 @@ C:\Code\POC-Razor-Hospitality\Restaurant\
 Restaurant.sln
 Restaurant.Api (ASP.NET Core Web API + SignalR + EF Core DbContext + Migrations)
 Restaurant.Mobile (MAUI Blazor Hybrid app) using local EF Core SQLite and remote sync via Web API + SignalR client
-Restaurant.Blazor (Blazor Interactive) — back office UI calling API
+Restaurant.Blazor (Blazor Web App (Server/Interactive)) — back office UI calling API
 Restaurant.Shared (class library with DTOs/entities and interfaces)
 Restaurant.UI.Shared (Razor Class Library for shared UI components)
 
