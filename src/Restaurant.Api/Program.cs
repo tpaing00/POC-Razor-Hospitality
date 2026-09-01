@@ -31,9 +31,9 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "https://localhost:7001",      // Blazor HTTPS
                 "http://localhost:5001",       // Blazor HTTP
-                "http://192.168.1.89:5001",    // Blazor on your IP
-                "http://192.168.1.89:5000",    // API on your IP
-                "http://10.0.2.2:5000"         // Android emulator
+                "http://10.0.2.2:5000",         // Android emulator
+                 "http://192.168.1.89:5001",    // Blazor on your IP
+                "http://192.168.1.89:5000"    // API on your IP
             )
             .AllowAnyMethod()
             .AllowAnyHeader()

@@ -4,4 +4,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <Content Include="bin\Debug\net10.0\Restaurant.Shared.deps.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bin\Debug\net10.0\Restaurant.Shared.dll" />
+    <None Include="bin\Debug\net10.0\Restaurant.Shared.pdb" />
+  </ItemGroup>
 </Project>

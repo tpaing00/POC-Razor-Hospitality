@@ -9,12 +9,13 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenAnyIP(5001);
 
     // HTTPS
-    options.ListenAnyIP(5002, listenOptions =>
-    {
-        listenOptions.UseHttps(
-            @"C:\Code\Restaurant-Blazor-Dev.pfx",
-            "RestaurantDev123!");
-    });
+    options.ListenAnyIP(5002);
+    //options.ListenAnyIP(5002, listenOptions =>
+    //{
+    //    listenOptions.UseHttps(
+    //        @"C:\Code\Restaurant-Blazor-Dev.pfx",
+    //        "RestaurantDev123!");
+    //});
 });
 
 // Add services to the container
@@ -23,6 +24,8 @@ builder.Services.AddRazorComponents()
 
 // Configure API base address
 var apiBaseUrl = builder.Configuration.GetValue<string>("ApiBaseUrl") ?? "http://192.168.1.89:5000";
+//192.168-17-35 
+//192.168-1-89
 
 
 // Add HTTP client for API

@@ -81,7 +81,7 @@ else
     private async Task InitializeSignalR()
     {
         hubConnection = new HubConnectionBuilder()
-            .WithUrl("http://192.168.1.89:5000/hubs/orders", options =>
+            .WithUrl("https://192.168.1.89:7000/hubs/orders", options =>
             {
                 options.HttpMessageHandlerFactory = (handler) =>
                 {
