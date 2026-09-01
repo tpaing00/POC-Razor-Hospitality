@@ -1,0 +1,111 @@
+﻿@page "/"
+@using Restaurant.Shared.Models.Dtos
+@using Restaurant.UI.Shared.Services
+@using Restaurant.UI.Shared
+@inject RestaurantApiService ApiService
+
+<h3>Restaurant Menu</h3>
+
+@if (isLoading)
+{
+    <p>Loading menu...</p>
+}
+else if (menuItems.Count == 0)
+{
+    <p>No menu items available.</p>
+}
+else
+{
+    @foreach (var category in menuItems.GroupBy(m => m.Category))
+    {
+        <h4>@category.Key</h4>
+        <div class="row">
+            @foreach (var item in category)
+            {
+                <div class="col-12 mb-3">
+                    <MenuItemCard MenuItem="@item"
+                                  ShowAddButton="true"
+                                  OnAdd="@AddToOrder" />
+                </div>
+            }
+        </div>
+    }
+}
+
+<hr />
+<h4>Current Order (@orderItems.Count items)</h4>
+@if (orderItems.Any())
+{
+    <ul>
+        @foreach (var item in orderItems)
+        {
+            <li>@item.Quantity x @item.MenuItemName - $@item.Subtotal</li>
+        }
+    </ul>
+    <p><strong>Total: $@orderItems.Sum(x => x.Subtotal).ToString("F2")</strong></p>
+    <button class="btn btn-success" @onclick="SubmitOrder">Submit Order</button>
+}
+
+@code {
+    private List<MenuItemDto> menuItems = new();
+    private List<OrderItemDto> orderItems = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            menuItems = await ApiService.GetMenuItemsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading menu: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void AddToOrder(MenuItemDto menuItem)
+    {
+        var existingItem = orderItems.FirstOrDefault(x => x.MenuItemId == menuItem.Id);
+        if (existingItem != null)
+        {
+            existingItem.Quantity++;
+            existingItem.Subtotal = existingItem.Quantity * existingItem.UnitPrice;
+        }
+        else
+        {
+            orderItems.Add(new OrderItemDto
+            {
+                MenuItemId = menuItem.Id,
+                MenuItemName = menuItem.Name,
+                Quantity = 1,
+                UnitPrice = menuItem.Price,
+                Subtotal = menuItem.Price
+            });
+        }
+    }
+
+    private async Task SubmitOrder()
+    {
+        try
+        {
+            var createOrder = new Restaurant.Shared.Models.Dtos.CreateOrderDto
+            {
+                CustomerName = "Mobile User",
+                TableId = 1,
+                Items = orderItems
+            };
+
+            await ApiService.CreateOrderAsync(createOrder);
+            orderItems.Clear();
+            Console.WriteLine("Order submitted successfully!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error submitting order: {ex.Message}");
+        }
+    }
+}

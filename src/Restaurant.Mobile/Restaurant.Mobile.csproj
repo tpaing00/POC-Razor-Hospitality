@@ -51,6 +51,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Restaurant.Shared\Restaurant.Shared.csproj" />
+        <ProjectReference Include="..\Restaurant.UI.Shared\Restaurant.UI.Shared.csproj" />
     </ItemGroup>
 
 </Project>
