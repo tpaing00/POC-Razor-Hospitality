@@ -46,3 +46,16 @@ src/Restaurant.Api/Hubs/OrdersHub.cs - SignalR hub
 src/Restaurant.Shared/Models/*.cs - shared entity/DTO definitions
 src/Restaurant.UI.Shared - Razor components (order list, order editor)
 src/Restaurant.Mobile/MainPage.razor / MauiProgram.cs - BlazorWebView and local DB setup
+
+
+Progress Summary:
+Completed:
+•	Step 1: Solution with 5 projects (Shared, API, UI.Shared, Blazor, Mobile)
+•	Step 2: Domain models and DTOs
+•	Step 3: API backend with database
+•	Step 4: Razor Class Library (shared UI components)
+•	Step 5: Back-office Blazor Web App (PWA with SignalR)
+Remaining:
+•	Step 6: Mobile app configuration (MAUI Blazor Hybrid)
+•	Step 7: Offline sync service for mobile
+•	Step 8: Documentation and deployment notes
