@@ -18,10 +18,15 @@ namespace Restaurant.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MenuItemDto>>> GetMenuItems()
+        public async Task<ActionResult<IEnumerable<MenuItemDto>>> GetMenuItems(
+            [FromQuery] bool includeUnavailable = false)
         {
-            var items = await _context.MenuItems
-                .Where(m => m.IsAvailable)
+            var query = _context.MenuItems.AsQueryable();
+
+            if (!includeUnavailable)
+                query = query.Where(m => m.IsAvailable);
+
+            var items = await query
                 .Select(m => new MenuItemDto
                 {
                     Id = m.Id,
