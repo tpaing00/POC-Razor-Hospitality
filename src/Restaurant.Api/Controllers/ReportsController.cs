@@ -30,6 +30,23 @@ namespace Restaurant.Api.Controllers
         /// </summary>
         private const int TopItemCount = 3;
 
+        /// <summary>
+        /// The widest window this endpoint will aggregate. It exists because the window is
+        /// caller-controlled and the query materializes every non-cancelled order <em>and every
+        /// order line</em> in it before grouping — <c>?from=2000-01-01&amp;to=2100-01-01</c> would
+        /// pull a century of trade into memory to produce eight numbers.
+        ///
+        /// Thirty-one days, because that is the widest window any consumer has a use for today and
+        /// it is the smallest ceiling that never gets in the way: the Dashboard asks for one day,
+        /// and a month-to-date view asks for at most a calendar month, so 31 lets
+        /// <c>from=1st, to=1st of the next month</c> through for every month including the long
+        /// ones. A quarter would triple the worst-case row count to serve no screen that exists.
+        /// This is a resource guard, not a business rule — a real reporting range (a quarter, a
+        /// year, a comparison against last year) needs a paged or database-side aggregation rather
+        /// than a bigger number here.
+        /// </summary>
+        private static readonly TimeSpan MaxWindow = TimeSpan.FromDays(31);
+
         private readonly RestaurantDbContext _context;
 
         public ReportsController(RestaurantDbContext context)
@@ -65,15 +82,27 @@ namespace Restaurant.Api.Controllers
             }
             else if (toUtc is null)
             {
-                toUtc = fromUtc!.Value.AddDays(1);
+                // Range-checked before the arithmetic: AddDays throws
+                // ArgumentOutOfRangeException off the end of the calendar, and an unhandled throw
+                // here would answer a malformed request with a 500 rather than a 400.
+                if (fromUtc!.Value > DateTime.MaxValue.AddDays(-1))
+                    return BadRequest("'from' is too close to the end of the calendar to derive a default 'to'.");
+
+                toUtc = fromUtc.Value.AddDays(1);
             }
             else if (fromUtc is null)
             {
+                if (toUtc.Value < DateTime.MinValue.AddDays(1))
+                    return BadRequest("'to' is too close to the start of the calendar to derive a default 'from'.");
+
                 fromUtc = toUtc.Value.AddDays(-1);
             }
 
             if (toUtc <= fromUtc)
                 return BadRequest("'to' must be later than 'from'.");
+
+            if (toUtc.Value - fromUtc.Value > MaxWindow)
+                return BadRequest($"The window must be {MaxWindow.TotalDays:0} days or shorter.");
 
             var start = fromUtc.Value;
             var end = toUtc.Value;
@@ -177,6 +206,12 @@ namespace Restaurant.Api.Controllers
         /// night otherwise. The hour is <c>Order.CreatedAt</c>'s, which is UTC — the same GAP-13
         /// stand-in as the default window, and wrong for the same reason. Real service periods are
         /// per-venue configuration.
+        ///
+        /// The buckets are exhaustive and non-overlapping, but note what the wrap costs: late night
+        /// here ends at midnight rather than running through it, so a venue trading to 02:00 has
+        /// that trade drawn under <c>Breakfast</c> while <c>Late night</c> reads near zero — a
+        /// chart that is wrong in a way that looks plausible. Closing GAP-13 has to give late night
+        /// a configured end hour past midnight, not just shift these four boundaries.
         /// </summary>
         private static string DaypartFor(int hour) => hour switch
         {
