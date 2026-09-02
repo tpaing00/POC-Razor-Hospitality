@@ -20,7 +20,15 @@
 </head>
 
 <body>
-    <Routes @rendermode="@InteractiveServer" />
+    @* prerender:false. The shell puts every route inside one interactive subtree, so a
+       page cannot opt out of prerendering on its own — a @rendermode on a page below
+       this point is inherited from here and ignored. With prerendering on, a page's
+       OnInitializedAsync runs twice in two DI scopes, once on the server render and
+       again on the circuit, so the Menu manager pays the HttpClient timeout twice
+       before first paint whenever the API is unreachable: roughly ten seconds instead
+       of five. The cost of turning it off is that first paint waits for the circuit,
+       which is milliseconds on a local server. *@
+    <Routes @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
 
     <script src="_framework/blazor.web.js"></script>
 

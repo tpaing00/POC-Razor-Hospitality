@@ -1,0 +1,586 @@
+@page "/menu"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using System.Globalization
+@using Restaurant.Shared.Models.Dtos
+@using Restaurant.UI.Shared.Services
+@inject MenuDataSource Menu
+
+@* Handbook Part II-B · Menu manager. Three panes inside the back-office panel:
+   a 200px major-category rail, a 400px item list, and a detail pane taking the
+   rest. The panes that rest on MenuItem's real fields — name, description,
+   price, category, availability, image — are built and wired through
+   MenuDataSource. The panes that rest on a model the POC does not have are
+   rendered in their designed positions as blocked panels naming their gap, on
+   --upos-surface-inset in --upos-ink-subtle, never as an error: a reader has to
+   be able to see both what the screen becomes and what stands between here and
+   there.
+
+   Render mode carries prerender:false deliberately. Prerendering runs
+   OnInitializedAsync once on the server render and again on the circuit, in two
+   DI scopes, so an unreachable API pays the HttpClient timeout twice before
+   first paint. *@
+
+<PageTitle>Menu manager</PageTitle>
+
+<section class="mm">
+
+    @if (_loading)
+    {
+        <p class="mm__notice">Loading the menu.</p>
+    }
+    else if (!_isLive)
+    {
+        <p class="mm__notice">
+            Seed data · the menu API is unreachable, so these rows are a design-time stand-in and
+            nothing you change here is written anywhere.
+        </p>
+    }
+
+    @if (_writeError is not null)
+    {
+        <p class="mm__notice mm__notice--write">@_writeError</p>
+    }
+
+    <div class="mm__panes">
+
+        @* ─── Pane 1 · major categories, 200px ──────────────────────────── *@
+        <nav class="mm__rail" aria-label="Major categories">
+            <p class="mm__rail-kicker">MAJOR CATEGORIES</p>
+
+            <button type="button"
+                    class="mm__major @(_major == AllMajors ? "is-selected" : null)"
+                    aria-current="@(_major == AllMajors ? "true" : null)"
+                    @onclick="() => SelectMajor(AllMajors)">
+                <span class="mm__major-name">All</span>
+                <span class="mm__major-count">@_items.Count</span>
+            </button>
+
+            @foreach (var major in Majors)
+            {
+                <button type="button"
+                        class="mm__major @(_major == major ? "is-selected" : null)"
+                        aria-current="@(_major == major ? "true" : null)"
+                        @onclick="() => SelectMajor(major)">
+                    <span class="mm__major-name">@major</span>
+                    <span class="mm__major-count">@_items.Count(i => i.Category == major)</span>
+                </button>
+            }
+        </nav>
+
+        @* ─── Pane 2 · item list, 400px ─────────────────────────────────── *@
+        <div class="mm__list">
+
+            <header class="mm__list-head">
+                <h1 class="mm__list-title">@_major · @Visible.Count items</h1>
+                <button type="button" class="mm__add" @onclick="ToggleForm">
+                    @(_formOpen ? "CLOSE FORM" : "+ ADD ITEM")
+                </button>
+            </header>
+
+            @* Minor-category filter chips. Blocked: Category is one flat string,
+               so the major and minor levels share it and a minor filter has
+               nothing to read. Not a numbered gap — the handbook states it in
+               Part II-B · Menu manager · Data and GAPS.md carries no entry. *@
+            <div class="mm__chips">
+                <Pill Label="All" Selected="true" />
+                <p class="mm__chips-note">
+                    Minor categories need a second category level. <code>Category</code> is one flat
+                    string, so these chips have nothing to filter on.
+                </p>
+            </div>
+
+            @if (_formOpen)
+            {
+                <div class="mm__form">
+                    <label class="mm__field">
+                        <span class="mm__field-label">NAME</span>
+                        <input class="mm__input @(_nameError is null ? null : "is-invalid")"
+                               type="text"
+                               placeholder="Name"
+                               aria-invalid="@(_nameError is null ? null : "true")"
+                               @bind="_formName"
+                               @bind:event="oninput" />
+                        @if (_nameError is not null)
+                        {
+                            <span class="mm__field-error">@_nameError</span>
+                        }
+                    </label>
+
+                    <label class="mm__field">
+                        <span class="mm__field-label">PRICE</span>
+                        <input class="mm__input @(_priceError is null ? null : "is-invalid")"
+                               type="text"
+                               inputmode="decimal"
+                               placeholder="Price (e.g. 9.50)"
+                               aria-invalid="@(_priceError is null ? null : "true")"
+                               @bind="_formPrice"
+                               @bind:event="oninput" />
+                        @if (_priceError is not null)
+                        {
+                            <span class="mm__field-error">@_priceError</span>
+                        }
+                    </label>
+
+                    <label class="mm__field">
+                        <span class="mm__field-label">CATEGORY</span>
+                        <input class="mm__input @(_categoryError is null ? null : "is-invalid")"
+                               type="text"
+                               list="mm-majors"
+                               placeholder="Category"
+                               aria-invalid="@(_categoryError is null ? null : "true")"
+                               @bind="_formCategory"
+                               @bind:event="oninput" />
+                        <datalist id="mm-majors">
+                            @foreach (var major in Majors)
+                            {
+                                <option value="@major"></option>
+                            }
+                        </datalist>
+                        @if (_categoryError is not null)
+                        {
+                            <span class="mm__field-error">@_categoryError</span>
+                        }
+                    </label>
+
+                    <div class="mm__form-actions">
+                        <UposButton Variant="ButtonVariant.Secondary" Label="Cancel" OnClick="CloseForm" />
+                        <UposButton Variant="ButtonVariant.Primary" Label="Add" Disabled="_busy" OnClick="AddItem" />
+                    </div>
+                </div>
+            }
+
+            <div class="mm__rows">
+                @if (_loading)
+                {
+                    <p class="mm__empty">Reading the menu.</p>
+                }
+                else if (Visible.Count == 0)
+                {
+                    <p class="mm__empty">
+                        @(_major == AllMajors
+                            ? "The menu is empty. Add the first item."
+                            : $"Nothing in {_major}. Add the first item.")
+                    </p>
+                }
+                else
+                {
+                    @foreach (var item in Visible)
+                    {
+                        var isSelected = item.Id == _selectedId;
+                        <DataRow class="@(item.IsAvailable ? "mm__row" : "mm__row is-eightysixed")"
+                                 Selected="isSelected"
+                                 OnClick="() => Select(item.Id)">
+                            <ChildContent>
+                                <span class="mm__row-name">@item.Name</span>
+                            </ChildContent>
+                            <Trailing>
+                                <span class="mm__row-price">@Money(item.Price)</span>
+                                @AvailabilityBadge(item)
+                            </Trailing>
+                        </DataRow>
+                    }
+                }
+            </div>
+        </div>
+
+        @* ─── Pane 3 · detail ───────────────────────────────────────────── *@
+        <div class="mm__detail">
+            @if (Selected is null)
+            {
+                <p class="mm__empty">No item selected. Pick a row to load its detail.</p>
+            }
+            else
+            {
+                var item = Selected!;
+
+                <header class="mm__detail-head">
+                    <h2 class="mm__detail-name">@item.Name</h2>
+                    <div class="mm__detail-head-right">
+                        @* VIEW PLATING opens the plate-view modal, which is plating
+                           assets and a stack builder end to end — GAP-06. Rendered
+                           in position, inert, rather than opening an empty modal. *@
+                        <span class="mm__plating" aria-disabled="true"
+                              title="Plate view needs a plating model (GAP-06)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 3v6M21 12h-6M12 21v-6M3 12h6" />
+                            </svg>
+                            VIEW PLATING
+                        </span>
+                        <span class="mm__detail-price">@Money(item.Price)</span>
+                    </div>
+                </header>
+
+                <p class="mm__detail-desc">
+                    @(string.IsNullOrWhiteSpace(item.Description)
+                        ? "No description on this item."
+                        : item.Description)
+                </p>
+
+                <div class="mm__detail-meta">
+                    <Pill Label="@item.Category" />
+                    <div class="mm__avail">
+                        <span class="mm__avail-label">
+                            @(item.IsAvailable ? "On the menu" : "86'd — off the menu")
+                        </span>
+                        @AvailabilityBadge(item)
+                    </div>
+                </div>
+
+                <p class="mm__gap-line">
+                    86ing is a manual flag on <code>MenuItem.IsAvailable</code>. No stock count
+                    drives it (GAP-11).
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                {
+                    <img class="mm__image" src="@item.ImageUrl" alt="@item.Name" />
+                }
+
+                @* ── RECIPE · INGREDIENTS — GAP-06 ─────────────────────────── *@
+                <section class="mm__block">
+                    <p class="mm__block-kicker">RECIPE · INGREDIENTS</p>
+                    <div class="mm__blocked">
+                        <p class="mm__blocked-what">
+                            One costed line per ingredient, with its cost right-aligned.
+                        </p>
+                        <p class="mm__blocked-needs">
+                            Needs <code>Recipe</code> on <code>MenuItem</code> and
+                            <code>RecipeComponent</code> rows carrying ingredient, quantity, unit and
+                            cost. Nothing on <code>MenuItemDto</code> holds any of it (GAP-06).
+                        </p>
+                    </div>
+                </section>
+
+                @* ── COGS $ · COGS % · MARGIN — GAP-06 ─────────────────────── *@
+                <section class="mm__block">
+                    <div class="mm__costs">
+                        <div class="mm__cost">
+                            <span class="mm__cost-label">COGS $</span>
+                            <span class="mm__cost-value">Not costed</span>
+                        </div>
+                        <div class="mm__cost">
+                            <span class="mm__cost-label">COGS %</span>
+                            <span class="mm__cost-value">Not costed</span>
+                        </div>
+                        <div class="mm__cost">
+                            <span class="mm__cost-label">MARGIN</span>
+                            <span class="mm__cost-value">Not costed</span>
+                        </div>
+                    </div>
+                    <p class="mm__gap-line">
+                        All three are computed off the recipe's ingredient costs against
+                        <code>Price</code>, and the 32% target that colors <code>COGS %</code> has
+                        nowhere to be configured (GAP-06, GAP-13).
+                    </p>
+                </section>
+
+                @* ── PREP STEPS — GAP-06 ───────────────────────────────────── *@
+                <section class="mm__block">
+                    <p class="mm__block-kicker">PREP STEPS</p>
+                    <div class="mm__blocked">
+                        <p class="mm__blocked-what">
+                            The ordered steps a cook works from, numbered.
+                        </p>
+                        <p class="mm__blocked-needs">
+                            Needs ordered <code>PrepStep</code> rows against the recipe. The POC has
+                            no step model and no station on an item (GAP-06).
+                        </p>
+                    </div>
+                </section>
+
+                @* ── ALLERGENS — GAP-05 ────────────────────────────────────── *@
+                <section class="mm__block">
+                    <p class="mm__block-kicker">ALLERGENS</p>
+                    <div class="mm__blocked">
+                        <p class="mm__blocked-what">
+                            One toggle pill per allergen, on in violet and off on the inset fill.
+                        </p>
+                        <p class="mm__blocked-needs">
+                            Needs an <code>Allergen</code> lookup joined many-to-many to
+                            <code>MenuItem</code> and surfaced on <code>MenuItemDto</code>. Violet is
+                            reserved for allergen across the terminal, the kitchen and the kiosk, and
+                            no field backs it (GAP-05).
+                        </p>
+                    </div>
+                </section>
+
+                @* ── MODIFIER GROUPS — GAP-01 ──────────────────────────────── *@
+                <section class="mm__block">
+                    <div class="mm__groups-head">
+                        <h3 class="mm__groups-title">Modifier groups</h3>
+                        <span class="mm__add mm__add--inert" aria-disabled="true"
+                              title="A modifier group has nowhere to be written (GAP-01)">+ ADD GROUP</span>
+                    </div>
+                    <div class="mm__blocked">
+                        <p class="mm__blocked-what">
+                            One card per group: its name, a required, optional or no/remove type chip,
+                            and its options as pills.
+                        </p>
+                        <p class="mm__blocked-needs">
+                            Needs <code>ModifierGroup</code> (name, type, min, max) and
+                            <code>ModifierOption</code> (name, price delta, kitchen name, default),
+                            with an <code>OrderItemModifier</code> join so a build reaches the kitchen
+                            as structure. The POC's only per-line customization is the free-text
+                            <code>OrderItem.SpecialInstructions</code> string (GAP-01).
+                        </p>
+                    </div>
+                </section>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    private const string AllMajors = "All";
+
+    private List<MenuItemDto> _items = new();
+    private bool _loading = true;
+    private bool _isLive;
+    private bool _busy;
+    private string? _writeError;
+
+    private string _major = AllMajors;
+    private int? _selectedId;
+
+    private bool _formOpen;
+    private string _formName = string.Empty;
+    private string _formPrice = string.Empty;
+    private string _formCategory = string.Empty;
+    private string? _nameError;
+    private string? _priceError;
+    private string? _categoryError;
+
+    /// <summary>Distinct <c>Category</c> values off the loaded items. There is no
+    /// category entity — the rail is a projection of a flat string.</summary>
+    private IReadOnlyList<string> Majors => _items
+        .Select(i => i.Category)
+        .Where(c => !string.IsNullOrWhiteSpace(c))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(c => c, StringComparer.CurrentCultureIgnoreCase)
+        .ToList();
+
+    private IReadOnlyList<MenuItemDto> Visible => _major == AllMajors
+        ? _items
+        : _items.Where(i => string.Equals(i.Category, _major, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private MenuItemDto? Selected => _items.FirstOrDefault(i => i.Id == _selectedId);
+
+    protected override Task OnInitializedAsync() => ReloadAsync();
+
+    /// <summary>
+    /// One read, then <c>IsLive</c> — read after awaiting the call whose result is on
+    /// screen, which is the only point at which it describes these rows.
+    /// </summary>
+    private async Task ReloadAsync()
+    {
+        _items = await Menu.GetAllAsync();
+        _isLive = Menu.IsLive;
+        _loading = false;
+
+        if (_selectedId is not null && _items.All(i => i.Id != _selectedId))
+        {
+            _selectedId = null;
+        }
+
+        _selectedId ??= Visible.FirstOrDefault()?.Id;
+    }
+
+    private void SelectMajor(string major)
+    {
+        _major = major;
+        _selectedId = Visible.FirstOrDefault()?.Id;
+
+        // The group form writes to whichever item is selected when it commits, so
+        // both forms close with the selection rather than surviving it (Part II-B).
+        CloseForm();
+    }
+
+    private void Select(int id) => _selectedId = id;
+
+    private void ToggleForm()
+    {
+        if (_formOpen)
+        {
+            CloseForm();
+            return;
+        }
+
+        _formOpen = true;
+        _formName = string.Empty;
+        _formPrice = string.Empty;
+        _formCategory = _major == AllMajors ? string.Empty : _major;
+        ClearErrors();
+    }
+
+    private void CloseForm()
+    {
+        _formOpen = false;
+        ClearErrors();
+    }
+
+    private void ClearErrors()
+    {
+        _nameError = null;
+        _priceError = null;
+        _categoryError = null;
+    }
+
+    /// <summary>
+    /// The POC's own prototype fails silently twice: a blank name makes the commit do
+    /// nothing at all, and a non-numeric price parses to zero so the item lands at
+    /// $0.00 unannounced. Both get a line under the field naming the cause and the
+    /// next move (§10).
+    /// </summary>
+    private async Task AddItem()
+    {
+        ClearErrors();
+        _writeError = null;
+
+        var name = _formName.Trim();
+        var category = _formCategory.Trim();
+        var priceText = _formPrice.Trim();
+
+        if (name.Length == 0)
+        {
+            _nameError = "Name is required · type the dish as it reads on the menu";
+        }
+
+        if (category.Length == 0)
+        {
+            _categoryError = "Category is required · pick a major first, or type one";
+        }
+
+        decimal price = 0m;
+        if (priceText.Length == 0)
+        {
+            _priceError = "Price is required · type it like 9.50";
+        }
+        else if (!decimal.TryParse(priceText, NumberStyles.Number, CultureInfo.InvariantCulture, out price)
+                 && !decimal.TryParse(priceText, NumberStyles.Number, CultureInfo.CurrentCulture, out price))
+        {
+            _priceError = "Price is not a number · type it like 9.50";
+        }
+        else if (price < 0m)
+        {
+            _priceError = "Price cannot be negative · type it like 9.50";
+        }
+
+        if (_nameError is not null || _priceError is not null || _categoryError is not null)
+        {
+            return;
+        }
+
+        var draft = new MenuItemDto
+        {
+            Name = name,
+            Description = string.Empty,
+            Price = decimal.Round(price, 2, MidpointRounding.AwayFromZero),
+            Category = category,
+            IsAvailable = true
+        };
+
+        _busy = true;
+        try
+        {
+            var created = await Menu.CreateAsync(draft);
+
+            // Add appends to the current major and selects it (Part II-B). A category
+            // typed outside the current major moves the rail with it, so the new row
+            // is visible rather than filtered away.
+            _major = created?.Category ?? draft.Category;
+            _selectedId = null;
+            await ReloadAsync();
+
+            var landed = created is not null
+                ? _items.FirstOrDefault(i => i.Id == created.Id)
+                : _items.LastOrDefault(i =>
+                    string.Equals(i.Name, draft.Name, StringComparison.Ordinal));
+
+            if (landed is not null)
+            {
+                _selectedId = landed.Id;
+            }
+
+            CloseForm();
+        }
+        catch (Exception ex)
+        {
+            _writeError = $"Could not add {draft.Name} · the menu API answered {Reason(ex)}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>
+    /// The 86 toggle writes through <c>UpdateAsync</c> and then re-reads, so the rows
+    /// and <c>IsLive</c> stay in agreement — a write getting through does not by itself
+    /// make the data on screen live.
+    /// </summary>
+    private async Task ToggleAvailability(MenuItemDto item)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _writeError = null;
+        _busy = true;
+        try
+        {
+            await Menu.UpdateAsync(new MenuItemDto
+            {
+                Id = item.Id,
+                Name = item.Name,
+                Description = item.Description,
+                Price = item.Price,
+                Category = item.Category,
+                IsAvailable = !item.IsAvailable,
+                ImageUrl = item.ImageUrl
+            });
+
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            var verb = item.IsAvailable ? "86" : "restore";
+            _writeError = $"Could not {verb} {item.Name} · the menu API answered {Reason(ex)}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>
+    /// <c>MenuDataSource</c> swallows only a connection-level failure; an HTTP status
+    /// from a live API is a real error and reaches here. One line, cause then next move.
+    /// </summary>
+    private static string Reason(Exception ex) => ex switch
+    {
+        HttpRequestException { StatusCode: not null } http => $"{(int)http.StatusCode} · retry or check the API log",
+        _ => "an error · retry or check the API log"
+    };
+
+    private static string Money(decimal value) =>
+        "$" + value.ToString("0.00", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// The availability badge is an instruction, not a status readout: it reads
+    /// <c>86</c> on <c>--upos-border</c> while the item is on the menu, and <c>ON</c> on
+    /// <c>--upos-status-late</c> once it is 86'd. It toggles in place with no dialog,
+    /// because 86ing an item is something you do mid-service.
+    /// </summary>
+    private RenderFragment AvailabilityBadge(MenuItemDto item) => @<button
+        type="button"
+        class="mm__86 @(item.IsAvailable ? null : "is-eightysixed")"
+        aria-pressed="@(item.IsAvailable ? "false" : "true")"
+        aria-label="@(item.IsAvailable ? $"86 {item.Name}" : $"Put {item.Name} back on the menu")"
+        disabled="@_busy"
+        @onclick:stopPropagation="true"
+        @onclick="() => ToggleAvailability(item)">@(item.IsAvailable ? "86" : "ON")</button>;
+}
