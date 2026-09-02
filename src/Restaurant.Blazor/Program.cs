@@ -39,13 +39,18 @@ builder.Services.AddScoped(sp =>
     };
     var httpClient = new HttpClient(handler)
     {
-        BaseAddress = new Uri(apiBaseUrl)
+        BaseAddress = new Uri(apiBaseUrl),
+        // Prerender runs these calls inline, so the default 100s timeout turns an unreachable
+        // API into a hung page. 5s is well above a cold-start local API and well below the
+        // ~21s Windows TCP connect timeout, so MenuDataSource falls back promptly instead.
+        Timeout = TimeSpan.FromSeconds(5)
     };
     return httpClient;
 });
 Console.WriteLine($"API Base URL NEW: {apiBaseUrl}");
 // Add API service
 builder.Services.AddScoped<RestaurantApiService>();
+builder.Services.AddScoped<MenuDataSource>();
 
 var app = builder.Build();
 

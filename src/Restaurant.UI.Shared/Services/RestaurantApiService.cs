@@ -19,9 +19,34 @@ public class RestaurantApiService
         return await _httpClient.GetFromJsonAsync<List<MenuItemDto>>("api/menu") ?? new();
     }
 
+    public async Task<List<MenuItemDto>> GetMenuItemsAsync(bool includeUnavailable)
+    {
+        var url = includeUnavailable ? "api/menu?includeUnavailable=true" : "api/menu";
+        return await _httpClient.GetFromJsonAsync<List<MenuItemDto>>(url) ?? new();
+    }
+
     public async Task<MenuItemDto?> GetMenuItemAsync(int id)
     {
         return await _httpClient.GetFromJsonAsync<MenuItemDto>($"api/menu/{id}");
+    }
+
+    public async Task<MenuItemDto?> CreateMenuItemAsync(MenuItemDto item)
+    {
+        var response = await _httpClient.PostAsJsonAsync("api/menu", item);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<MenuItemDto>();
+    }
+
+    public async Task UpdateMenuItemAsync(MenuItemDto item)
+    {
+        var response = await _httpClient.PutAsJsonAsync($"api/menu/{item.Id}", item);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteMenuItemAsync(int id)
+    {
+        var response = await _httpClient.DeleteAsync($"api/menu/{id}");
+        response.EnsureSuccessStatusCode();
     }
 
     // Tables
