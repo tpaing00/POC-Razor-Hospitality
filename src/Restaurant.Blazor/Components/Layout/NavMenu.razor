@@ -1,29 +1,163 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Restaurant Back-office</a>
+@inject IJSRuntime JS
+
+@* Back-office rail — handbook Part II-B preamble and Part III · SideNav.
+   224px, --upos-grad-dark, --upos-radius-panel, sticky at top:14px. The nav
+   items are the kit's .u-nav-item restyled at the call site (five overrides,
+   NavMenu.razor.css). Icons are inline 24x24 stroke SVG at stroke-width 1.7,
+   currentColor, rendered at 16px (§9). *@
+
+<nav class="rail">
+    <div class="brand">
+        <div class="brand__mark" aria-hidden="true">UF</div>
+        <div class="brand__text">
+            <span class="brand__name">UPOS Fusion</span>
+            <span class="brand__kicker">BACK OFFICE</span>
+        </div>
     </div>
-</div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+    <div class="nav">
+        <NavLink class="u-nav-item" ActiveClass="is-active" href="" Match="NavLinkMatch.All">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <path d="M9 22V12h6v10" />
+            </svg>
+            <span>Dashboard</span>
+        </NavLink>
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Dashboard
-            </NavLink>
+        <NavLink class="u-nav-item" ActiveClass="is-active" href="menu">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+            </svg>
+            <span>Menu</span>
+        </NavLink>
+
+        <span class="u-nav-item is-disabled" aria-disabled="true"
+              title="Integrations · not built in this pass">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+            <span>Integrations</span>
+        </span>
+
+        <span class="u-nav-item is-disabled" aria-disabled="true"
+              title="Employees · not built in this pass">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span>Employees</span>
+        </span>
+
+        <span class="u-nav-item is-disabled" aria-disabled="true"
+              title="Reports · not built in this pass">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 20V10M12 20V4M6 20v-6" />
+            </svg>
+            <span>Reports</span>
+        </span>
+
+        <span class="u-nav-item is-disabled" aria-disabled="true"
+              title="Devices · not built in this pass">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <path d="M8 21h8M12 17v4" />
+            </svg>
+            <span>Devices</span>
+        </span>
+
+        <span class="u-nav-item is-disabled" aria-disabled="true"
+              title="Settings · not built in this pass">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            <span>Settings</span>
+        </span>
+    </div>
+
+    <div class="rail-foot">
+        <button type="button" class="theme-toggle" @onclick="ToggleTheme">
+            @if (_dark)
+            {
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4.5" />
+                    <path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+                </svg>
+                <span>Switch to light</span>
+            }
+            else
+            {
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+                <span>Switch to dark</span>
+            }
+        </button>
+
+        <div class="accents" role="group" aria-label="Accent color">
+            @foreach (var accent in Accents)
+            {
+                <button type="button"
+                        class="@($"swatch swatch--{accent.Key}")"
+                        data-accent="@(accent.Key == "slate" ? null : accent.Key)"
+                        aria-label="@accent.Value"
+                        aria-pressed="@(_accent == accent.Key ? "true" : "false")"
+                        @onclick="() => SetAccent(accent.Key)"></button>
+            }
         </div>
+    </div>
+</nav>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="orders">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Orders
-            </NavLink>
-        </div>
+@code {
+    private static readonly (string Key, string Value)[] Accents =
+    {
+        ("slate", "Slate accent"),
+        ("teal", "Teal accent"),
+        ("indigo", "Indigo accent"),
+        ("sky", "Sky accent")
+    };
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="menu">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Menu
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    private bool _dark;
+    private string _accent = "slate";
+    private bool _interactive;
+
+    // The document attributes are only reachable once the circuit is live; during
+    // prerender there is no JS runtime to call (handbook §12's interop snippet).
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _interactive = true;
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        _dark = !_dark;
+        if (_interactive)
+        {
+            await JS.InvokeVoidAsync("uposShell.setTheme", _dark ? "dark" : null);
+        }
+    }
+
+    private async Task SetAccent(string accent)
+    {
+        _accent = accent;
+        if (_interactive)
+        {
+            await JS.InvokeVoidAsync("uposShell.setAccent", accent);
+        }
+    }
+}

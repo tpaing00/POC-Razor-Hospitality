@@ -1,38 +1,30 @@
-﻿@page "/"
-@rendermode InteractiveServer
+@page "/"
 
-<PageTitle>Dashboard</PageTitle>
+<PageTitle>Back office</PageTitle>
 
-<h1>Welcome to Restaurant Back-office</h1>
+<section class="panel">
+    <p class="kicker">RIVERSIDE GRILL · BACK OFFICE</p>
+    <h1>Riverside Grill · back office</h1>
 
-<p>Welcome to your new app.</p>
+    <p class="lede">
+        This build covers the shell and the Menu manager. The rail carries every back-office
+        destination, and Integrations, Employees, Reports, Devices and Settings are drawn without
+        being wired.
+    </p>
+    <p class="lede">
+        The Dashboard's figures — net sales, covers, labor and the daypart split — rest on
+        aggregation endpoints that do not exist yet, so this panel states that instead of showing
+        numbers it cannot source.
+    </p>
 
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Orders</h5>
-                <p class="card-text">Manage and track orders</p>
-                <a href="/orders" class="btn btn-primary">View Orders</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Menu</h5>
-                <p class="card-text">Manage menu items</p>
-                <a href="/menu" class="btn btn-primary">View Menu</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Tables</h5>
-                <p class="card-text">Manage table layout</p>
-                <a href="#" class="btn btn-secondary disabled">Coming Soon</a>
-            </div>
-        </div>
-    </div>
-</div>
+    <ul class="links">
+        <li>
+            <a href="menu">Menu manager <span class="arrow" aria-hidden="true">→</span></a>
+            <span class="meta">Categories, items and the 86 toggle, against the seeded menu.</span>
+        </li>
+        <li>
+            <a href="kit">Component showcase <span class="arrow" aria-hidden="true">→</span></a>
+            <span class="meta">Every kit recipe in every state. It lands with the component library.</span>
+        </li>
+    </ul>
+</section>

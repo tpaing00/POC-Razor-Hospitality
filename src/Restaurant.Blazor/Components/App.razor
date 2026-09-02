@@ -22,6 +22,26 @@
 <body>
     <Routes @rendermode="@InteractiveServer" />
 
+    <script src="_framework/blazor.web.js"></script>
+
+    <!-- Theming contract (handbook §11, §12): data-theme and data-accent live on
+         <html>, and the shell flips them through interop. Light theme is the
+         absence of data-theme. -->
+    <script>
+        window.uposShell = {
+            setTheme: function (theme) {
+                if (theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                }
+            },
+            setAccent: function (accent) {
+                document.documentElement.setAttribute('data-accent', accent);
+            }
+        };
+    </script>
+
     <!-- Service Worker Registration -->
     <script>
             if ('serviceWorker' in navigator) {

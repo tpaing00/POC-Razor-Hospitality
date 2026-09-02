@@ -1,0 +1,86 @@
+/* Landing panel. Panel chrome comes from the shell (MainLayout.razor.css);
+   this file sets only the type inside it, per handbook §6 and §10. */
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-inline);
+}
+
+.kicker {
+    margin: 0;
+    font: var(--upos-type-label);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+h1 {
+    margin: 0;
+    font: var(--upos-type-display);
+    letter-spacing: -.03em;
+    color: var(--upos-ink);
+}
+
+.lede {
+    margin: 0;
+    max-width: 68ch;
+    font: var(--upos-type-body);
+    color: var(--upos-ink);
+}
+
+.links {
+    list-style: none;
+    margin: var(--upos-space-gap-card) 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+    max-width: 520px;
+}
+
+/* A block inside the white panel takes --upos-surface-inset and no shadow
+   (Part II-B preamble); it picks the shadow up when it lifts (§7, §8). */
+.links li {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--upos-space-pad-inset);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+    transition: transform var(--upos-dur-fast) var(--upos-ease),
+                box-shadow var(--upos-dur-fast) var(--upos-ease);
+}
+
+.links a {
+    font: var(--upos-type-row);
+    letter-spacing: -.01em;
+    color: var(--upos-accent);
+    text-decoration: none;
+}
+
+.arrow {
+    margin-left: 4px;
+}
+
+.meta {
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+@media (hover: hover) {
+    .links li:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--upos-shadow-card);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .links li {
+        transition: none;
+    }
+
+    .links li:hover {
+        transform: none;
+    }
+}
