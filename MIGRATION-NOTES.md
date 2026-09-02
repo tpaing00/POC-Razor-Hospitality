@@ -5,10 +5,12 @@ Branch `feat/upos-fusion-ui`, six commits off `upstream/development` at `d16ac2c
 This is a design pass, not a feature you asked for. It applies the UPOS Fusion Fluid design system to the
 back office (`Restaurant.Blazor`) and builds the Menu manager as a working screen against your real
 `MenuItem` data. The specification is the handbook at
-`C:\Users\h_ozs\UPOS\docs\design\UPOS-DESIGN-HANDBOOK.md` — Part I is the design language, Part II-B is the
-Menu manager screen spec, Part III is the component contract. It lives outside this repo. Treat it as the
-source: the CSS here is copied from its token kit verbatim, so fix a value there and re-copy rather than
-editing the copy in place.
+`docs/design/UPOS-DESIGN-HANDBOOK.md` **in a separate repository** — Part I is the design language,
+Part II-B is the Menu manager screen spec, Part III is the component contract. That repository also holds
+the token kit this branch copied from and `docs/GAPS.md`, which every `GAP-NN` citation in the Menu manager
+points at. **Ask for it alongside this branch**: without it the citations on screen and the spec pointers
+here go nowhere. Treat it as the source — the CSS in this repo is copied verbatim, so fix a value there and
+re-copy rather than editing the copy in place.
 
 ## What replaced Bootstrap
 
@@ -72,6 +74,15 @@ back-office call, not just the menu. Any genuinely long-running call added later
 **`Restaurant.Mobile` was not touched.** It inherits the component library and the token kit through
 `Restaurant.UI.Shared`, so its shared components will render in the new language the next time it builds.
 Nothing was done to check how that looks on a phone.
+
+## Prerendering is off application-wide
+
+`App.razor`'s `<Routes>` now renders with `prerender: false`. The Menu manager needed it — with the API
+unreachable, prerendering ran the load twice in two DI scopes and doubled the wait before first paint — but
+because the shell makes every route one interactive subtree, the setting could not be scoped to that page
+alone. Every route now waits on the circuit for its first paint instead of serving static HTML first. If you
+want prerendering back for the rest of the app, the shell has to be restructured so routes are separate
+interactive subtrees.
 
 ## Deliberately not done
 
