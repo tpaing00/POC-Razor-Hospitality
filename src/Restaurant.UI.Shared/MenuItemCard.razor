@@ -1,53 +1,106 @@
-﻿@using Restaurant.Shared.Models.Dtos
+@using Restaurant.Shared.Models.Dtos
+@using Restaurant.UI.Shared.Components.Upos
 
-<div class="card menu-item-card">
-    <div class="card-body">
-        <h5 class="card-title">@MenuItem.Name</h5>
-        <p class="card-text">@MenuItem.Description</p>
-        <p class="text-muted">@MenuItem.Category</p>
-        <div class="d-flex justify-content-between align-items-center">
-            <span class="h4 mb-0">$@MenuItem.Price.ToString("F2")</span>
-            @if (ShowAddButton && MenuItem.IsAvailable)
-            {
-                <button class="btn btn-primary" @onclick="OnAddClick">
-                    Add to Order
-                </button>
-            }
-            @if (!MenuItem.IsAvailable)
-            {
-                <span class="badge bg-secondary">Unavailable</span>
-            }
-        </div>
+@* Handbook Part III · MenuItemCard.
+   Classes: none of its own in the kit; composes <AllergenChip> and a
+            <StatusChip> at the late tone for the 86'D pill.
+   Props:   Item, Layout (Tile | GridCard | ListRow), Scale (Terminal | Kiosk),
+            Tag (the kiosk merchandising word), OnTap.
+   States:  available; 86'd — opacity .5, the name struck, the price replaced by
+            the red 86'D pill, and no response to a tap.
+   Notes:   the POC card was a Bootstrap card with an inline <style> block; the
+            restyle is --upos-surface at --upos-radius-card with 1px
+            --upos-border and --upos-shadow-card (MenuItemCard.razor.css). The
+            kiosk never renders the 86'd state — an unavailable item is filtered
+            out of the menu, not marked in it, because 86'D is staff jargon
+            before it is a label. Allergen chips are design-only until MenuItem
+            carries allergens (GAP-05), so this card renders none today rather
+            than faking data. *@
+
+@if (Tappable)
+{
+    <button type="button" @onclick="Tap" @attributes="Attributes">
+        @Body
+    </button>
+}
+else
+{
+    <div @attributes="Attributes">
+        @Body
     </div>
-</div>
-
-@code {
-    [Parameter]
-    public MenuItemDto MenuItem { get; set; } = new();
-
-    [Parameter]
-    public bool ShowAddButton { get; set; } = true;
-
-    [Parameter]
-    public EventCallback<MenuItemDto> OnAdd { get; set; }
-
-    private async Task OnAddClick()
-    {
-        if (OnAdd.HasDelegate)
-        {
-            await OnAdd.InvokeAsync(MenuItem);
-        }
-    }
 }
 
-<style>
-    .menu-item-card {
-        margin-bottom: 1rem;
-        transition: transform 0.2s;
-    }
+@code {
+    [Parameter] public MenuItemDto Item { get; set; } = new();
 
-    .menu-item-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-</style>
+    /// <summary>Tile is the terminal's grid square, GridCard the kiosk card,
+    /// ListRow the horizontal row both surfaces offer as an alternative view.</summary>
+    [Parameter] public CardLayout Layout { get; set; } = CardLayout.GridCard;
+
+    /// <summary>Kiosk is Part I's roles at x1.4 and lifts the whole element to
+    /// --upos-touch-kiosk (Guest-facing rules).</summary>
+    [Parameter] public TypeScale Scale { get; set; } = TypeScale.Terminal;
+
+    /// <summary>The kiosk merchandising word. It overrides .u-pill outright —
+    /// --upos-accent fill under white 800/14px at .1em — which Part III discloses
+    /// here rather than folding into the recipe.</summary>
+    [Parameter] public string? Tag { get; set; }
+
+    [Parameter] public EventCallback<MenuItemDto> OnTap { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    /// <summary>86'd does not respond to a tap (§4).</summary>
+    private bool Tappable => OnTap.HasDelegate && Item.IsAvailable;
+
+    private string LayoutClass => Layout switch
+    {
+        CardLayout.Tile => "u-menu-card--tile",
+        CardLayout.ListRow => "u-menu-card--list",
+        _ => "u-menu-card--grid"
+    };
+
+    private IReadOnlyDictionary<string, object> Attributes => UposAttributes.Merge(
+        AdditionalAttributes,
+        $"u-menu-card {LayoutClass}"
+            + (Scale == TypeScale.Kiosk ? " u-menu-card--kiosk" : string.Empty)
+            + (Item.IsAvailable ? string.Empty : " is-86")
+            + (Tappable ? " u-menu-card--tappable" : string.Empty));
+
+    private RenderFragment Body => @<text>
+        <div class="u-menu-card__head">
+            <span class="u-menu-card__name">@Item.Name</span>
+            @if (!string.IsNullOrWhiteSpace(Tag))
+            {
+                <span class="u-menu-card__tag">@Tag</span>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Item.Description))
+        {
+            <p class="u-menu-card__desc">@Item.Description</p>
+        }
+
+        @* GAP-05: MenuItem carries no allergens, so the row is empty by design
+           rather than filled with invented data. The composition is here for the
+           day the field lands. *@
+
+        <div class="u-menu-card__foot">
+            @if (Item.IsAvailable)
+            {
+                <span class="u-menu-card__price">$@Item.Price.ToString("F2")</span>
+            }
+            else
+            {
+                <StatusChip Tone="StatusTone.Late" Label="86'D" />
+            }
+            @if (!string.IsNullOrWhiteSpace(Item.Category))
+            {
+                <span class="u-menu-card__category">@Item.Category</span>
+            }
+        </div>
+    </text>;
+
+    private Task Tap() => OnTap.InvokeAsync(Item);
+}

@@ -1,0 +1,53 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+@using Restaurant.Shared.Models
+
+@* Handbook Part III · StatusChip.
+   Classes: .u-chip-status with --new | --fired | --late | --ready.
+   Props:   Status (OrderStatus?), Tone (StatusTone?, for a state that is not an
+            OrderStatus), Label (string?, overriding §4's word), Elapsed
+            (TimeSpan?), LateAfter (TimeSpan?).
+   States:  the four hues, with §4's map supplying the word from Status. Late is
+            derived when Elapsed > LateAfter, takes .u-chip-status--late, and
+            overrides the mapped color while it holds.
+   Notes:   late is computed from those two parameters and never passed as a
+            stored status — no endpoint returns one (§4). Tone is what the 86'd
+            pill uses: an unavailable item is a menu-item state, not an order
+            state, and it still belongs in late-red. fl-pulse belongs to a timer
+            and a live dot, not to a chip (§8). *@
+
+<span @attributes="Attributes">@ChipLabel</span>
+
+@code {
+    /// <summary>An order's status. Supplies both the hue and the word through §4's map.</summary>
+    [Parameter] public OrderStatus? Status { get; set; }
+
+    /// <summary>The hue for a state that is not an <see cref="OrderStatus"/> — the 86'd
+    /// pill on a menu item is the case Part III names.</summary>
+    [Parameter] public StatusTone? Tone { get; set; }
+
+    /// <summary>Overrides §4's word. Carries the labels the map has no entry for.</summary>
+    [Parameter] public string? Label { get; set; }
+
+    /// <summary>Time on the clock for this record. Half of the lateness derivation.</summary>
+    [Parameter] public TimeSpan? Elapsed { get; set; }
+
+    /// <summary>The station or channel threshold. The other half.</summary>
+    [Parameter] public TimeSpan? LateAfter { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    /// <summary>Late overrides the mapped color for as long as it holds (§4).</summary>
+    private bool IsLate => StatusMap.IsLate(Elapsed, LateAfter);
+
+    private StatusTone EffectiveTone => IsLate
+        ? StatusTone.Late
+        : Tone ?? (Status.HasValue ? StatusMap.ToneFor(Status.Value) : StatusTone.New);
+
+    private string ChipLabel => Label
+        ?? (Status.HasValue ? StatusMap.LabelFor(Status.Value) : EffectiveTone.ToString().ToUpperInvariant());
+
+    private IReadOnlyDictionary<string, object> Attributes => UposAttributes.Merge(
+        AdditionalAttributes,
+        $"u-chip-status {StatusMap.ChipClass(EffectiveTone)}");
+}

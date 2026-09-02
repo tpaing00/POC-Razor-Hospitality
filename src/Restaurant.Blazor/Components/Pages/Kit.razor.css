@@ -1,0 +1,124 @@
+/* Showcase scaffolding for the development-aid route. Layout and labels only —
+   the components under test carry their own styling, and every value here is a
+   token so the page holds under a theme or accent flip. */
+
+.kit {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-section);
+}
+
+.kit__title {
+    margin: 0 0 6px;
+    font: var(--upos-type-display);
+    color: var(--upos-ink);
+}
+
+.kit__lede {
+    margin: 0;
+    max-width: 70ch;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.kit__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-card);
+    padding-top: var(--upos-space-gap-card);
+    border-top: 1px solid var(--upos-border);
+}
+
+.kit__h {
+    margin: 0;
+    font: var(--upos-type-heading);
+    color: var(--upos-ink);
+}
+
+.kit__note {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.kit__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--upos-space-gap-card);
+}
+
+.kit__row--cards .kit__cell {
+    width: 260px;
+}
+
+/* A few states only read on the ground rather than on the white panel — the
+   card shadow and the Ground stat-card fill among them (§2's ladder). */
+.kit__row--ground,
+.kit__row--dark {
+    padding: 20px;
+    border-radius: var(--upos-radius-card);
+}
+
+.kit__row--ground {
+    background: var(--upos-surface-inset);
+}
+
+.kit__row--dark {
+    background: var(--upos-grad-dark);
+}
+
+.kit__stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-card);
+    max-width: 560px;
+}
+
+.kit__cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--upos-space-gap-row);
+}
+
+/* Rows and list cards are full-bleed inside the stack, so a tappable card and a
+   non-tappable one measure the same. */
+.kit__stack .kit__cell {
+    align-items: stretch;
+}
+
+.kit__lab {
+    font: var(--upos-type-label);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.kit__lab--dark {
+    color: var(--upos-kds-ink);
+}
+
+.kit__sub {
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.kit__mono {
+    font: var(--upos-type-mono);
+    color: var(--upos-ink);
+}
+
+.kit__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--upos-radius-pill);
+    background: var(--upos-accent);
+}
+
+/* A stub panel so the modal-scoped icon-button rotation can be seen. */
+.kit__modalstub {
+    width: auto;
+    padding: 14px;
+    animation: none;
+}

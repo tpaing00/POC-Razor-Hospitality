@@ -1,0 +1,29 @@
+/* The kit ships the box — padding, radius, fill, shadow and the -4px lift. The
+   three type roles inside it and Part II-B's Panel fill are this component's,
+   and both come out of the token set (§6, §2). */
+
+.u-stat-card__label {
+    font: var(--upos-type-label);
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.u-stat-card__value {
+    font: var(--upos-type-display);
+    color: var(--upos-ink);
+}
+
+.u-stat-card__comparison {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: 700 11.5px/1.3 Archivo, system-ui, sans-serif;
+}
+
+/* Part II-B's ruling: a card inside the white panel sits on --upos-surface-inset
+   with no shadow, because §2's ladder does not stack a surface on a surface. */
+.u-stat-card--panel {
+    background: var(--upos-surface-inset);
+    box-shadow: none;
+}

@@ -1,0 +1,46 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+
+@* Handbook Part III · UposIconButton.
+   Classes: .u-icon-btn; .u-modal .u-icon-btn when it closes a modal, where the
+            kit rotates it 90deg instead of lifting it.
+   Props:   Icon, Label (the accessible name), HitArea (px), OnClick.
+   Notes:   the glyph is 34px on every surface and only the hit area moves. The
+            terminal centres it in at least --upos-touch-terminal 48px because
+            §11's minimum outranks the artboard's 30px; the back office is
+            pointer input and takes the bare 34px. 34px is a literal rather than
+            a token (§12) and it belongs to the recipe, not to this component. *@
+
+<span class="u-icon-btn__hit" style="@HitStyle">
+    <button type="button"
+            aria-label="@Label"
+            disabled="@Disabled"
+            @onclick="OnClick"
+            @attributes="Attributes">
+        @Icon
+    </button>
+</span>
+
+@code {
+    /// <summary>An inline SVG at stroke-width 2, or 1.7 in the sidebar (§9).</summary>
+    [Parameter] public RenderFragment? Icon { get; set; }
+
+    /// <summary>The accessible name. An icon button has no visible label, so this is
+    /// the only name it gets.</summary>
+    [Parameter] public string Label { get; set; } = string.Empty;
+
+    /// <summary>The tappable square the 34px glyph is centred in. 34 on a pointer
+    /// surface, 48 on the terminal, 36 on the payment mirror.</summary>
+    [Parameter] public int HitArea { get; set; } = 34;
+
+    [Parameter] public bool Disabled { get; set; }
+
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string HitStyle => $"width:{HitArea}px;height:{HitArea}px";
+
+    private IReadOnlyDictionary<string, object> Attributes =>
+        UposAttributes.Merge(AdditionalAttributes, "u-icon-btn");
+}

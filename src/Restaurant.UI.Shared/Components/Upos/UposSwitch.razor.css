@@ -1,0 +1,11 @@
+/* Focus and disabled. The track, the knob and the slide are all the kit's. */
+
+.u-switch:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 3px;
+}
+
+.u-switch:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}

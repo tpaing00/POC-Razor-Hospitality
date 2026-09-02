@@ -1,0 +1,42 @@
+/* The kit ships .u-pill as a tag. The three states Part III adds — interactive,
+   selected, bordered-quiet — are declared here rather than in the verbatim kit.
+   Ink on the accent fill is --upos-kds-ink, §4's on-dark ink, which applies to
+   every dark surface and not only the board; the alternative is a literal #fff,
+   which §11's theming contract forbids a component from writing. */
+
+.u-pill--interactive {
+    border: none;
+    cursor: pointer;
+    transition: background var(--upos-dur-fast) var(--upos-ease),
+                color var(--upos-dur-fast) var(--upos-ease),
+                transform var(--upos-dur-fast) var(--upos-ease);
+}
+
+.u-pill--interactive:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}
+
+.u-pill--bordered {
+    background: transparent;
+    border: 1px solid var(--upos-border);
+}
+
+.u-pill.is-selected {
+    background: var(--upos-grad-primary);
+    color: var(--upos-kds-ink);
+    border-color: transparent;
+    box-shadow: var(--upos-shadow-button);
+}
+
+.u-pill__leading {
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+}
+
+@media (hover: hover) {
+    .u-pill--interactive:hover {
+        transform: translateY(-2px);
+    }
+}

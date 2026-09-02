@@ -1,0 +1,157 @@
+/* Part III · MenuItemCard has no recipe in the kit — it is specced as
+   "--upos-surface at --upos-radius-card with 1px --upos-border and
+   --upos-shadow-card", composing an AllergenChip and a StatusChip. That card
+   treatment lives here. Every value is a token; the -4px card lift sits inside
+   the same @media (hover:hover) guard the kit uses, so no touch surface gets it.
+   This file replaces the inline <style> block the POC card carried. */
+
+.u-menu-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-chip);
+    padding: var(--upos-space-pad-card-sm);
+    text-align: left;
+    background: var(--upos-surface);
+    border: 1px solid var(--upos-border);
+    border-radius: var(--upos-radius-card);
+    box-shadow: var(--upos-shadow-card);
+    color: var(--upos-ink);
+    transition: transform var(--upos-dur-fast) var(--upos-ease),
+                opacity var(--upos-dur-fast) var(--upos-ease);
+}
+
+.u-menu-card--tappable {
+    cursor: pointer;
+    font: inherit;
+    width: 100%;
+}
+
+.u-menu-card--tappable:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}
+
+.u-menu-card__head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--upos-space-gap-inline);
+}
+
+.u-menu-card__name {
+    flex: 1;
+    min-width: 0;
+    font: var(--upos-type-heading);
+}
+
+/* The kiosk merchandising tag overrides .u-pill outright (Part III): accent fill
+   under 800/14px at .1em. The ink is --upos-kds-ink, §4's on-dark ink, which
+   applies to every dark surface and keeps this file free of a literal #fff. */
+.u-menu-card__tag {
+    flex: none;
+    padding: 5px 12px;
+    border-radius: var(--upos-radius-pill);
+    background: var(--upos-accent);
+    color: var(--upos-kds-ink);
+    font: 800 14px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.u-menu-card__desc {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.u-menu-card__foot {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-inline);
+    margin-top: auto;
+    padding-top: 4px;
+}
+
+.u-menu-card__price {
+    font: var(--upos-type-mono);
+    color: var(--upos-ink);
+}
+
+.u-menu-card__category {
+    margin-left: auto;
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+/* Layouts. Tile is the terminal's grid square, GridCard the standing card,
+   ListRow the horizontal row. */
+.u-menu-card--tile {
+    min-height: 132px;
+}
+
+.u-menu-card--grid {
+    min-height: 158px;
+}
+
+.u-menu-card--list {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--upos-space-gap-card);
+    min-height: var(--upos-touch-terminal);
+    border-radius: var(--upos-radius-inset);
+}
+
+.u-menu-card--list .u-menu-card__head {
+    flex: 1;
+    min-width: 0;
+}
+
+.u-menu-card--list .u-menu-card__desc {
+    display: none;
+}
+
+.u-menu-card--list .u-menu-card__foot {
+    margin-top: 0;
+    padding-top: 0;
+    flex: none;
+}
+
+.u-menu-card--list .u-menu-card__category {
+    margin-left: 0;
+}
+
+/* Kiosk scale: Part I's roles at x1.4, and the whole element clears
+   --upos-touch-kiosk (Guest-facing rules). */
+.u-menu-card--kiosk {
+    min-height: max(var(--upos-touch-kiosk), 200px);
+    padding: var(--upos-space-pad-card);
+}
+
+.u-menu-card--kiosk .u-menu-card__name {
+    font: 800 25px/1.25 Archivo, system-ui, sans-serif;
+}
+
+.u-menu-card--kiosk .u-menu-card__desc {
+    font: 400 18px/1.5 Archivo, system-ui, sans-serif;
+}
+
+.u-menu-card--kiosk .u-menu-card__price {
+    font: 800 18px/1 ui-monospace, Menlo, monospace;
+}
+
+/* 86'd (§4): opacity .5, the name struck, the price replaced by the red pill,
+   and no response to a tap. The tap is refused in the component, not here. */
+.u-menu-card.is-86 {
+    opacity: .5;
+}
+
+.u-menu-card.is-86 .u-menu-card__name {
+    text-decoration: line-through;
+}
+
+@media (hover: hover) {
+    .u-menu-card--tappable:hover {
+        transform: translateY(-4px);
+    }
+}

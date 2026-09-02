@@ -1,0 +1,57 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+
+@* Handbook Part III · AllergenChip.
+   Classes: .u-chip-allergen.
+   Props:   Allergen, OnDark, Interactive, IsOn, OnToggle.
+   States:  on light, --upos-allergen-bg under --upos-allergen-text; on dark,
+            inverted — fill --upos-allergen-text, ink --upos-kds-ink, because the
+            light pairing does not hold contrast on a board (§5); toggled off in
+            the menu manager, --upos-surface-inset in --upos-ink-subtle.
+   Notes:   the label is the allergen word alone, uppercase — a chit reading
+            NO GLUTEN in the source renders GLUTEN, and the violet says the rest
+            (§5). Never an icon alone, never an emoji, never a color-only signal.
+            Violet means allergen and nothing else in UPOS. No field backs any of
+            it: MenuItem carries no allergens today (GAP-05). *@
+
+@if (Interactive)
+{
+    <button type="button"
+            aria-pressed="@(IsOn ? "true" : "false")"
+            @onclick="Toggle"
+            @attributes="Attributes">@Allergen</button>
+}
+else
+{
+    <span @attributes="Attributes">@Allergen</span>
+}
+
+@code {
+    /// <summary>The allergen word. The recipe uppercases it.</summary>
+    [Parameter] public string Allergen { get; set; } = string.Empty;
+
+    /// <summary>Inverts the pairing for a dark surface — the board, a toast, a dark
+    /// panel. §4: the on-dark set applies to every dark surface, not only the KDS.</summary>
+    [Parameter] public bool OnDark { get; set; }
+
+    /// <summary>Renders the chip as a toggle rather than a tag (Menu manager).</summary>
+    [Parameter] public bool Interactive { get; set; }
+
+    /// <summary>Whether an interactive chip is on. Ignored when static.</summary>
+    [Parameter] public bool IsOn { get; set; } = true;
+
+    [Parameter] public EventCallback<string> OnToggle { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private bool ShowOff => Interactive && !IsOn;
+
+    private IReadOnlyDictionary<string, object> Attributes => UposAttributes.Merge(
+        AdditionalAttributes,
+        "u-chip-allergen"
+            + (OnDark ? " u-chip-allergen--on-dark" : string.Empty)
+            + (ShowOff ? " u-chip-allergen--off" : string.Empty)
+            + (Interactive ? " u-chip-allergen--interactive" : string.Empty));
+
+    private Task Toggle() => OnToggle.InvokeAsync(Allergen);
+}

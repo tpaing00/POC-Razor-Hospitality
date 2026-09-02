@@ -1,0 +1,58 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+
+@* Handbook Part III · StatCard.
+   Classes: .u-stat-card.
+   Props:   Label, Value (formatted upstream), Comparison (RenderFragment?),
+            ComparisonTone (StatusTone?, null for --upos-ink-subtle),
+            Fill (SurfaceFill: Ground | Panel).
+   States:  with or without a comparison line; ready-green when the figure beats
+            its comparison, fired-orange when it misses a target,
+            --upos-ink-subtle when it is neither; the empty day, where the value
+            reads $0 or 0.
+   Notes:   Fill is Part II-B's ruling — the kit ships --upos-surface plus
+            --upos-shadow-card, right for a card on the ground and wrong for one
+            inside the white panel, where §2's ladder puts blocks on
+            --upos-surface-inset with no shadow. Comparison is a fragment because
+            the dashboard's line opens with a direction arrow drawn as an inline
+            SVG; §9's permitted glyphs carry no arrow character. The comparison
+            line is the only colored thing on the card and it takes the text
+            tokens, never the fills; the value never takes a status color (§4).
+            Nothing on this card is interactive. *@
+
+<div @attributes="Attributes">
+    <span class="u-stat-card__label">@Label</span>
+    <span class="u-stat-card__value">@Value</span>
+    @if (Comparison is not null)
+    {
+        <span class="u-stat-card__comparison" style="color:@ComparisonColor">@Comparison</span>
+    }
+</div>
+
+@code {
+    /// <summary>The kicker above the figure. Rendered at the label role, uppercase.</summary>
+    [Parameter] public string? Label { get; set; }
+
+    /// <summary>The figure, already formatted. The card does no money formatting.</summary>
+    [Parameter] public string? Value { get; set; }
+
+    /// <summary>The comparison line, as markup, because it opens with an inline SVG arrow.</summary>
+    [Parameter] public RenderFragment? Comparison { get; set; }
+
+    /// <summary>The comparison line's tone. Null reads --upos-ink-subtle.</summary>
+    [Parameter] public StatusTone? ComparisonTone { get; set; }
+
+    /// <summary>Ground is the kit recipe unchanged; Panel drops the shadow onto
+    /// --upos-surface-inset, which is what the dashboard passes.</summary>
+    [Parameter] public SurfaceFill Fill { get; set; } = SurfaceFill.Ground;
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string ComparisonColor => ComparisonTone is null
+        ? "var(--upos-ink-subtle)"
+        : StatusMap.TextToken(ComparisonTone.Value);
+
+    private IReadOnlyDictionary<string, object> Attributes => UposAttributes.Merge(
+        AdditionalAttributes,
+        "u-stat-card" + (Fill == SurfaceFill.Panel ? " u-stat-card--panel" : string.Empty));
+}
