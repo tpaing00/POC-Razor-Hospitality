@@ -41,8 +41,33 @@
         </p>
     </header>
 
+    <p class="tp__kicker">1440 &times; 900 &middot; the primary design</p>
+
     <div class="tp__frame">
         <div class="tp__device">
+            <TerminalShell ActiveDestination="order">
+                <OrderEntryScreen CustomerName="Mobile User" TableId="1" />
+            </TerminalShell>
+        </div>
+    </div>
+
+    @* The handheld step, stood up beside the design it degrades from.
+
+       Both frames are on this page at once and both are correct at once, which
+       is the whole reason the step is a container query on the shell rather
+       than a media query on the viewport: the rule asks how wide the shell is,
+       and these two shells are 1440px and 393px in the same browser window. A
+       viewport rule would flip both frames together the moment the window
+       narrowed, and would report the opposite of the truth about the device.
+
+       393x785 is what the Datalogic Memor 20's WebView reports for its
+       1080x2160 screen at 440dpi. It is a real measurement off a real device,
+       not a chosen number — and Part II-A · Handheld is provisional for exactly
+       that reason: the device is one candidate and the fleet is not settled. *@
+    <p class="tp__kicker">393 &times; 785 &middot; handheld &middot; provisional</p>
+
+    <div class="tp__frame tp__frame--handheld">
+        <div class="tp__device tp__device--handheld">
             <TerminalShell ActiveDestination="order">
                 <OrderEntryScreen CustomerName="Mobile User" TableId="1" />
             </TerminalShell>

@@ -182,3 +182,51 @@
         transform: translateY(-4px);
     }
 }
+
+/* ─── Handheld ───────────────────────────────────────────────────────────────
+   Part II-A · Order entry · Handheld, provisional. Below 800px of shell width
+   Order entry's grid is one column, and a 190px square stretched to 365px is a
+   card with a hole in it — so the tile takes the ListRow form.
+
+   It takes it from the container, not from the Layout parameter. Part III rules
+   that no component takes a touch flag, because a host should not have to
+   suppress an affordance the CSS already withholds; the same argument holds one
+   step over, so no component takes a width flag either. Order entry passes Tile
+   at every width and this block does the rest, which means MenuItemCard never
+   learns how wide the shell is, and the Menu manager's cards — which have no
+   upos-shell container above them — cannot match this query at all.
+
+   The declarations are .u-menu-card--list's, applied to .u-menu-card--tile.
+   Reaching the same form through the same class is not available: a container's
+   state cannot be written into a selector, so the recipe is restated here and
+   named as the restatement it is. */
+
+@container upos-shell (max-width: 800px) {
+
+    .u-menu-card--tile {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--upos-space-gap-card);
+        min-height: var(--upos-touch-terminal);
+        border-radius: var(--upos-radius-inset);
+    }
+
+    .u-menu-card--tile .u-menu-card__head {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .u-menu-card--tile .u-menu-card__desc {
+        display: none;
+    }
+
+    .u-menu-card--tile .u-menu-card__foot {
+        flex: none;
+        margin-top: 0;
+        padding-top: 0;
+    }
+
+    .u-menu-card--tile .u-menu-card__category {
+        margin-left: 0;
+    }
+}

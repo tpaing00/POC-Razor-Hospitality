@@ -43,7 +43,19 @@
 
    The 86'd state is not blocked: MenuItem.IsAvailable is real, so an 86'd tile
    renders per §4 — opacity .5, the name struck, the price replaced by the red
-   86'D pill, no response to a tap, and its place in the grid kept. *@
+   86'D pill, no response to a tap, and its place in the grid kept.
+
+   Part II-A · Handheld, provisional. Below 800px of shell width the three panes
+   cannot be drawn — 170 + 380 + 44 + 190 is 784px before one item is on the
+   glass — so the rail becomes a chip row, the grid becomes one column in the
+   ListRow form, and the cart collapses behind a summary bar that opens it as a
+   bottom sheet. The whole of it is in OrderEntryScreen.razor.css behind one
+   @@container query on the shell. Nothing in this file asks how wide anything
+   is: the markup below is identical at both widths but for the summary bar, the
+   scrim and the sheet's close control, which are in the DOM at every width and
+   display:none above the step. _cartOpen is the sheet's own state, not a device
+   check — at 1440 nothing can set it, because the control that sets it is not
+   rendered visible there. *@
 
 <div class="oe">
 
@@ -146,8 +158,11 @@
         </div>
     </section>
 
-    @* ─── Cart panel, 380px ────────────────────────────────────────────────*@
-    <aside class="oe__cart" aria-label="Check">
+    @* ─── Cart panel, 380px ────────────────────────────────────────────────
+       Below the handheld step this same element is the bottom sheet, and
+       is-open is what shows it there. Above the step the class is inert: the
+       panel is the third grid column at every value of _cartOpen. *@
+    <aside class="oe__cart @(_cartOpen ? "is-open" : null)" aria-label="Check">
 
         <header class="oe__cart-head">
             <div class="oe__check">
@@ -167,6 +182,16 @@
                   aria-disabled="true"
                   title="Identify guest reads a loyalty account — points, tier, the guest's name. No loyalty entity exists in the POC (GAP-12).">
                 IDENTIFY GUEST &middot; GAP-12
+            </span>
+
+            @* The sheet's close control. Rendered at every width and hidden
+               above the handheld step, where the cart is a panel with nothing
+               to close. *@
+            <span class="oe__sheet-close">
+                <UposIconButton Icon="CloseGlyph"
+                                Label="Close the check"
+                                HitArea="48"
+                                OnClick="CloseCart" />
             </span>
         </header>
 
@@ -251,6 +276,45 @@
             </div>
         </footer>
     </aside>
+
+    @* ─── Handheld · the scrim under the sheet ─────────────────────────────
+       display:none above the step, so at 1440 this element exists and does
+       nothing. It is rendered rather than conditioned on width because width is
+       not something this component is allowed to know. *@
+    <div class="oe__scrim @(_cartOpen ? "is-open" : null)"
+         aria-hidden="true"
+         @onclick="CloseCart"></div>
+
+    @* ─── Handheld · the summary bar, 64px ─────────────────────────────────
+       Part II-D's bag bar at staff scale, sitting directly above the shell's
+       bottom nav: IN CHECK in the label class, the line count and the running
+       total, and one primary that opens the sheet. It reads IN CHECK rather
+       than IN BAG because a guest has a bag and a server has a check (§10), and
+       Review rather than Charge because Charge lives inside the sheet.
+
+       With an empty check the bar carries the cart's own empty line and no
+       button at all — a live-looking Review over an empty check would be a
+       control that refuses a tap, which §11 rules out. *@
+    <div class="oe__summary">
+        @if (_lines.Count == 0)
+        {
+            <p class="oe__cart-empty">No items yet — tap the menu to build the order.</p>
+        }
+        else
+        {
+            <div class="oe__summary-figures">
+                <span class="oe__summary-kicker">In check</span>
+                <span class="oe__summary-count">@LineCountLabel</span>
+                <span class="oe__summary-total">@Money(Subtotal)</span>
+            </div>
+
+            @* The amount is on the bar, not on the button — Part II-D's
+               division of the same two jobs: the bar reports, the button acts. *@
+            <UposButton Variant="ButtonVariant.Primary"
+                        Label="Review"
+                        OnClick="OpenCart" />
+        }
+    </div>
 </div>
 
 @code {
@@ -274,6 +338,14 @@
     private string? _sendError;
     private int? _sentOrder;
     private string _category = string.Empty;
+
+    /// <summary>
+    /// Whether the check is open as a sheet. This is the sheet's own state and not
+    /// a device or width check: above the handheld step the cart is the third grid
+    /// column whatever this holds, and the only control that sets it — the summary
+    /// bar's Review — is display:none up there, so nothing can set it at 1440.
+    /// </summary>
+    private bool _cartOpen;
 
     private Timer? _confirmTimer;
 
@@ -300,6 +372,18 @@
     private string CheckLabel => _sentOrder is null ? "New check" : $"Order #{_sentOrder}";
 
     private string SendLabel => _confirming ? "SENT TO KITCHEN" : "SEND ALL TO KITCHEN";
+
+    /// <summary>The summary bar's line count. Lines, not covers: what the bar
+    /// counts is what the list below it shows.</summary>
+    private string LineCountLabel => _lines.Count == 1 ? "1 item" : $"{_lines.Count} items";
+
+    /// <summary>Part II-A · Handheld. Review opens the check as a sheet; the scrim
+    /// and the close control shut it. Send-all deliberately leaves it open: the
+    /// confirmation is read where the button was pressed, and animating the panel
+    /// away from it would trade a message for a transition.</summary>
+    private void OpenCart() => _cartOpen = true;
+
+    private void CloseCart() => _cartOpen = false;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -464,4 +548,11 @@
                                               stroke-linejoin="round" aria-hidden="true">
                                              <path d="M20 6L9 17l-5-5" />
                                          </svg>;
+
+    /// <summary>The sheet's close glyph, an inline SVG at stroke-width 2 (§9).</summary>
+    private RenderFragment CloseGlyph => @<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                                               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                               stroke-linejoin="round" aria-hidden="true">
+                                              <path d="M18 6L6 18M6 6l12 12" />
+                                          </svg>;
 }

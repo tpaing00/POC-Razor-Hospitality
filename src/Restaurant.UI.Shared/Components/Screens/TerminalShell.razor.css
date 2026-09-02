@@ -14,7 +14,34 @@
     border-radius: var(--upos-radius-panel);
     background: var(--upos-surface);
     color: var(--upos-ink);
+
+    /* Part II-A · Handheld. The shell is the container the handheld step
+       measures, and it is named so the destination inside it can ask about the
+       shell's width from its own scope. A container query rather than a media
+       query because the shell is what the panes have to fit inside and the
+       viewport is only sometimes the same box: on the device they are
+       identical, in the back office's fixed preview frame they are not, and a
+       viewport rule would flip a 1440px frame the moment the browser window
+       narrowed. Where the container query is unsupported nothing matches and
+       the 1440x900 layout stands, which is the behaviour before this rule. */
+    container-type: inline-size;
+    container-name: upos-shell;
 }
+
+/* NOT SOLVED, and recorded here rather than papered over. Restaurant.Mobile's
+   WebView fills the whole 1080x2160 panel — 393x785 CSS px, the full screen —
+   so the shell runs under Android's status bar at the top and its gesture bar
+   at the foot: the 26px mark is clipped from above and the lower half of the
+   78px nav sits under the system bar. It predates the handheld step (the wide
+   layout was cut in exactly the same two places) and the step does not cause
+   it, but a 58px top bar under a status bar is tighter than a 76px one.
+
+   env(safe-area-inset-*) does not fix it: this WebView reports 0 for all four,
+   because Android exposes cutout insets there and not system-bar insets, and
+   padding by four zeroes would be a rule that looks like a fix and is not. The
+   real fix is host-side — the MAUI page has to consume the window insets — so
+   it belongs to Restaurant.Mobile, not to a stylesheet, and it is left as a
+   named defect rather than half-done in the wrong file. */
 
 /* The one element in the product that spends --upos-blur-glass (§7). The veil
    is what makes the blur mean anything; the artboard's flat inset fill would
@@ -86,6 +113,11 @@
     cursor: default;
 }
 
+/* The narrow label is out of the way at every width above the step. */
+.shell__blocked-narrow {
+    display: none;
+}
+
 .shell__body {
     flex: 1;
     min-height: 0;
@@ -99,4 +131,53 @@
     flex: 1;
     min-width: 0;
     min-height: 0;
+}
+
+/* ─── Handheld ───────────────────────────────────────────────────────────────
+   Part II-A · Order entry · Handheld, provisional. One step at 800px of shell
+   width — 170px rail + 380px cart + 44px grid padding + one 190px tile = 784px
+   before the screen holds an item, rounded up. The 800 stays a literal: a
+   custom property cannot be read inside a container condition, so a token for
+   it would be a token nothing could spend (§12).
+
+   The shell's own share of the rule is the top bar. The bottom nav takes no
+   rule at all: .u-nav-item is already flex:1 capped at 150px inside 8px gaps,
+   which is 72px an item at 393px, and PAYMENTS at 700/10.5px .16em measures
+   under that. */
+
+@container upos-shell (max-width: 800px) {
+
+    /* 76px -> 58px, and the page step for side padding. The glass treatment is
+       unchanged: this is still the one element that spends --upos-blur-glass. */
+    .shell__top {
+        height: 58px;
+        padding: 0 var(--upos-space-page);
+        gap: var(--upos-space-gap-inline);
+    }
+
+    /* The venue and terminal id drop a role and truncate from the terminal id
+       rather than pushing the clock off the bar. */
+    .shell__venue {
+        font: 700 13px/1.2 Archivo, system-ui, sans-serif;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* The offline slot stays — §11 gives it a permanent slot, and a handheld
+       carried away from the counter is the likeliest thing in the venue to lose
+       the network — but at the short label. */
+    .shell__blocked-wide {
+        display: none;
+    }
+
+    .shell__blocked-narrow {
+        display: inline;
+    }
+
+    /* The server name drops. Of the two right-hand items it is the one whose
+       reader already knows the answer; the clock stays, because a check is a
+       thing that gets stamped. */
+    .shell__blocked--server {
+        display: none;
+    }
 }

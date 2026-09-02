@@ -41,17 +41,24 @@
             <span class="shell__mark" aria-hidden="true"></span>
             <span class="shell__venue">@Venue &middot; @TerminalId</span>
 
-            @* Offline pill slot — GAP-10, in position and inert. *@
+            @* Offline pill slot — GAP-10, in position and inert. Part II-A ·
+               Handheld keeps this slot below 800px and drops the server name
+               instead, so the label ships in two lengths and the container
+               query picks one. Both are in the DOM at every width; neither is
+               chosen in C#, because the shell's width is not a C# fact. *@
             <span class="shell__blocked"
                   aria-disabled="true"
                   title="The offline pill reads OFFLINE · N QUEUED off a replay queue. Nothing observes connectivity here and no queue table exists (GAP-10).">
-                OFFLINE PILL &middot; GAP-10
+                <span class="shell__blocked-wide">OFFLINE PILL &middot; GAP-10</span>
+                <span class="shell__blocked-narrow">GAP-10</span>
             </span>
         </div>
 
         <div class="shell__status">
-            @* Server name — GAP-09, in position and inert. *@
-            <span class="shell__blocked"
+            @* Server name — GAP-09, in position and inert. It is the one thing
+               the handheld top bar drops (Part II-A · Handheld): the person
+               holding the device is the server. *@
+            <span class="shell__blocked shell__blocked--server"
                   aria-disabled="true"
                   title="The server on shift comes from an employee record. The POC has no employee, role or shift model, so a name here would be a literal (GAP-09).">
                 SERVER &middot; GAP-09

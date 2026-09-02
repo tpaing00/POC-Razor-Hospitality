@@ -82,3 +82,19 @@
         background: transparent;
     }
 }
+
+/* The handheld frame. 393x785 is the Memor 20's reported viewport; the frame is
+   fixed at it for the same reason the 1440x900 one is fixed — a scaled preview
+   reads as a different device. It does not stretch to the page, so it sits at
+   the left of its scroller rather than centred, where a 1440px frame's left
+   edge also is. */
+.tp__frame--handheld {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.tp__device--handheld {
+    width: 393px;
+    height: 785px;
+    flex: none;
+}
