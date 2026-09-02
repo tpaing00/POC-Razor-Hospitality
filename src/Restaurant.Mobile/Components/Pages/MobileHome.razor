@@ -23,9 +23,9 @@ else
             @foreach (var item in category)
             {
                 <div class="col-12 mb-3">
-                    <MenuItemCard MenuItem="@item"
-                                  ShowAddButton="true"
-                                  OnAdd="@AddToOrder" />
+                    <MenuItemCard Item="@item"
+                                  Layout="CardLayout.ListRow"
+                                  OnTap="@AddToOrder" />
                 </div>
             }
         </div>
