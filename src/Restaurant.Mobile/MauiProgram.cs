@@ -34,11 +34,28 @@ public static class MauiProgram
                 ServerCertificateCustomValidationCallback =
                     HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             };
-            return new HttpClient(handler) { BaseAddress = new Uri(apiBaseUrl) };
+            return new HttpClient(handler)
+            {
+                BaseAddress = new Uri(apiBaseUrl),
+                // The terminal has to keep working with no network (handbook §11), so an
+                // unreachable API must fail fast enough for MenuDataSource to fall back
+                // before the first paint. The default 100s would hold the Order entry
+                // grid empty for a minute and a half; 5s is well above a cold local API
+                // and matches the back office.
+                Timeout = TimeSpan.FromSeconds(5)
+            };
         });
 
         // Add API service
         builder.Services.AddScoped<RestaurantApiService>();
+
+        // The Order entry screen's data dependency, and the reason the terminal can be
+        // opened at a bench with no API: MenuDataSource reads through
+        // RestaurantApiService, falls back to seed data when the API cannot be reached
+        // at all, and reports which of the two is on screen through IsLive. The back
+        // office already registers it (Restaurant.Blazor/Program.cs); the shared screen
+        // needs it in both hosts.
+        builder.Services.AddScoped<MenuDataSource>();
 
         // Add local SQLite database (we'll create this next)
         var dbPath = Path.Combine(FileSystem.AppDataDirectory, "restaurant.db");

@@ -1,0 +1,84 @@
+/* The development preview's own chrome. The terminal's styling lives with the
+   terminal's components; nothing in this file restyles the screen, and the two
+   rules that reach into it both exist to stop a desktop browser from
+   misrepresenting the device. */
+
+.tp {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-section);
+}
+
+.tp__head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+}
+
+.tp__kicker {
+    margin: 0;
+    font: var(--upos-type-label);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.tp__title {
+    margin: 0;
+    font: 800 32px/1.1 Archivo, system-ui, sans-serif;
+    letter-spacing: -.03em;
+    color: var(--upos-ink);
+}
+
+.tp__note {
+    margin: 0;
+    max-width: 78ch;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.tp__note code {
+    font: 700 12px/1 ui-monospace, Menlo, monospace;
+}
+
+/* The frame scrolls; the device does not scale. A scaled preview reads as a
+   smaller terminal and hides how much a 190px tile is. */
+.tp__frame {
+    overflow: auto;
+    padding: var(--upos-space-gap-card);
+    border-radius: var(--upos-radius-panel);
+    background: var(--upos-ground);
+}
+
+.tp__device {
+    width: 1440px;
+    height: 900px;
+    border-radius: var(--upos-radius-panel);
+    box-shadow: var(--upos-shadow-card);
+}
+
+/* The device has no hover. The kit's lifts are correctly guarded behind
+   @media (hover:hover) and this browser satisfies that guard, so the preview
+   retracts them rather than showing an affordance the terminal cannot produce
+   (§8). ::deep because everything inside the frame carries its own scope. */
+@media (hover: hover) {
+    .tp__device ::deep .u-btn:hover,
+    .tp__device ::deep .u-icon-btn:hover,
+    .tp__device ::deep .u-nav-item:hover,
+    .tp__device ::deep .u-data-row:hover,
+    .tp__device ::deep .u-menu-card--tappable:hover,
+    .tp__device ::deep .u-stat-card:hover,
+    .tp__device ::deep .u-tender-tile:hover,
+    .tp__device ::deep .u-tip-btn:hover {
+        transform: none;
+        box-shadow: var(--upos-shadow-card);
+    }
+
+    .tp__device ::deep .u-btn--primary:hover {
+        box-shadow: var(--upos-shadow-button);
+    }
+
+    .tp__device ::deep .u-qty-stepper button:hover {
+        background: transparent;
+    }
+}

@@ -1,0 +1,74 @@
+/* Part II-A · the shell's bottom nav, and Part III · BottomNav. The kit's
+   .u-nav-bottom is a floating pill strip on --upos-surface; the terminal's is
+   78px of --upos-surface-inset with no blur, a 1px top hairline and 8px between
+   items, and Part III routes both of the recipe's differences here rather than
+   into the kit: the active fill (the recipe only tints the ink) and the strip's
+   own geometry. Every value is a token or a Part II-A literal. No :hover rule —
+   the terminal has no hover and press feedback is the ripple tint (§8). */
+
+.u-nav-bottom {
+    flex: none;
+    height: 78px;
+    box-sizing: border-box;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-row);
+    padding: 0 14px;
+    /* Flush inside the shell, whose own 26px clip rounds the outer corners, so
+       the strip carries none of its own (§7). */
+    border-radius: 0;
+    border-top: 1px solid var(--upos-border);
+    background: var(--upos-surface-inset);
+    box-shadow: none;
+}
+
+.u-nav-item {
+    flex: 1;
+    max-width: 150px;
+    min-height: var(--upos-touch-terminal);
+    /* A blocked destination renders as a span, which the UA lays out content-box
+       while it lays a button out border-box. Without this the four spans measure
+       170×64 against the button's 150×48 and the strip reads ragged. */
+    box-sizing: border-box;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 10px;
+    border: none;
+    background: transparent;
+    font: 700 10.5px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    -webkit-tap-highlight-color: var(--upos-press-tint);
+}
+
+.u-nav-item__icon {
+    display: inline-flex;
+    width: 17px;
+    height: 17px;
+}
+
+/* The active destination fills rather than tinting — the call-site override
+   Part III names. On-dark ink, because --upos-grad-primary is a dark fill (§4). */
+.u-nav-item.is-active {
+    background: var(--upos-grad-primary);
+    color: var(--upos-kds-ink);
+}
+
+/* A destination that is not built in this pass. Quiet, in position, and not
+   tappable — the back-office rail's treatment for the same case. */
+.u-nav-item.is-blocked {
+    opacity: .5;
+    cursor: default;
+}
+
+/* Press feedback on a touch surface is the ripple tint, no transform (§8). */
+.u-nav-item:active {
+    background-color: var(--upos-press-tint);
+}
+
+.u-nav-item.is-active:active {
+    background: var(--upos-grad-primary);
+}
+
+.u-nav-item.is-blocked:active {
+    background: transparent;
+}

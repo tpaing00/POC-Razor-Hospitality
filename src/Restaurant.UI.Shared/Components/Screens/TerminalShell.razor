@@ -1,0 +1,147 @@
+@namespace Restaurant.UI.Shared.Components.Screens
+@using Restaurant.UI.Shared.Components.Upos
+@implements IDisposable
+
+@* Handbook Part II-A · the terminal shell. "The terminal is one 1440×900 shell
+   at --upos-radius-panel 26px, --upos-surface, clipped, with a fixed 76px top
+   bar and a fixed 78px bottom nav. Everything between them is a destination."
+   Order entry carries this spec because every destination inherits it, so the
+   chrome is its own component and the destination arrives as ChildContent —
+   the next seven terminal screens host into the same shell rather than
+   re-drawing it.
+
+   The shell fills its host. On Restaurant.Mobile that is the device viewport;
+   in the back office's development preview that is a 1440×900 box. Nothing here
+   hard-codes the artboard's dimensions, because the artboard's 1440×900 is one
+   terminal, not the contract.
+
+   Two elements of the top bar are rendered in position and blocked rather than
+   invented, in the Menu manager's treatment — quiet, on the inset, naming the
+   gap, never an error:
+
+   · the offline pill (GAP-10). §11 gives it a permanent slot beside the venue
+     name reading OFFLINE · N QUEUED. Nothing observes connectivity on this
+     terminal and no queue table exists, so a pill here would be a light with no
+     wire behind it.
+   · the server name (GAP-09) is a literal. There is no employee, role or shift
+     record to read a name from, so the slot says so instead of inventing Maya.
+
+   The clock is real: it is the device's own time, and nothing upstream is
+   needed for it. It ticks on a timer the component disposes. *@
+
+<div class="shell">
+
+    @* ─── Top bar, 76px ────────────────────────────────────────────────────
+       The one element in the product that takes --upos-blur-glass (§7):
+       --upos-surface-veil under backdrop-filter, 1px --upos-border bottom,
+       padding 0 28px. The artboard fills it flat with --upos-surface-inset; the
+       veil is what makes the blur mean anything. *@
+    <header class="shell__top">
+        <div class="shell__identity">
+            <span class="shell__mark" aria-hidden="true"></span>
+            <span class="shell__venue">@Venue &middot; @TerminalId</span>
+
+            @* Offline pill slot — GAP-10, in position and inert. *@
+            <span class="shell__blocked"
+                  aria-disabled="true"
+                  title="The offline pill reads OFFLINE · N QUEUED off a replay queue. Nothing observes connectivity here and no queue table exists (GAP-10).">
+                OFFLINE PILL &middot; GAP-10
+            </span>
+        </div>
+
+        <div class="shell__status">
+            @* Server name — GAP-09, in position and inert. *@
+            <span class="shell__blocked"
+                  aria-disabled="true"
+                  title="The server on shift comes from an employee record. The POC has no employee, role or shift model, so a name here would be a literal (GAP-09).">
+                SERVER &middot; GAP-09
+            </span>
+            <span class="shell__clock">@_now.ToString("HH:mm")</span>
+        </div>
+    </header>
+
+    @* ─── Destination ─────────────────────────────────────────────────────
+       Everything between the two bars. It takes the remaining height and owns
+       its own scrolling; nothing in the shell scrolls. *@
+    <main class="shell__body">
+        @ChildContent
+    </main>
+
+    @* ─── Bottom nav, 78px ────────────────────────────────────────────────
+       ORDER · TABLES · PAYMENTS · CHANNELS · MORE. Order entry is the one
+       destination built in this pass, so the other four render inert rather
+       than answering a tap with nothing (§11 makes this nav the only
+       full-screen transition in the flow, which is exactly why an item that
+       goes nowhere cannot look live). *@
+    <BottomNav Items="Destinations"
+               Active="@ActiveDestination"
+               OnNavigate="OnNavigate"
+               Label="Terminal destinations" />
+</div>
+
+@code {
+    /// <summary>The venue's name, left of the terminal id in the top bar.</summary>
+    [Parameter] public string Venue { get; set; } = "Riverside Grill";
+
+    /// <summary>This terminal's id — the artboard's "Counter 2".</summary>
+    [Parameter] public string TerminalId { get; set; } = "Counter 2";
+
+    /// <summary>The destination between the bars.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>The active destination's key. Exactly one is active.</summary>
+    [Parameter] public string ActiveDestination { get; set; } = "order";
+
+    /// <summary>Raised when a built destination is tapped. Only ORDER is built in
+    /// this pass, so this fires with "order" and nothing else.</summary>
+    [Parameter] public EventCallback<string> OnNavigate { get; set; }
+
+    private DateTime _now = DateTime.Now;
+    private Timer? _clock;
+
+    /// <summary>
+    /// The five destinations. Four carry Enabled false: the floor plan, payment,
+    /// channels and MORE are specced in Part II-A and not built in this pass.
+    /// </summary>
+    private IReadOnlyList<NavItem> Destinations => new[]
+    {
+        new NavItem("order", "ORDER", OrderIcon),
+        new NavItem("tables", "TABLES", TablesIcon) { Enabled = false },
+        new NavItem("payments", "PAYMENTS", PaymentsIcon) { Enabled = false },
+        new NavItem("channels", "CHANNELS", ChannelsIcon) { Enabled = false },
+        new NavItem("more", "MORE", MoreIcon) { Enabled = false }
+    };
+
+    /// <summary>
+    /// The clock is wall time on the device, so it has to move. Half a minute is
+    /// close enough for a bar that reads HH:mm and cheap enough not to matter; the
+    /// timer starts after the first render, so it never fires into a component that
+    /// has not rendered, and it is disposed with the component.
+    /// </summary>
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _clock = new Timer(_ =>
+        {
+            _now = DateTime.Now;
+            _ = InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    public void Dispose() => _clock?.Dispose();
+
+    // Icons: 17px inline stroke SVG at stroke-width 2, currentColor (§9).
+    private RenderFragment OrderIcon => @<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v5H4zM4 13h16v7H4z" /><path d="M8 17h4" /></svg>;
+
+    private RenderFragment TablesIcon => @<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="9" rx="2" /><path d="M7 15v4M17 15v4" /></svg>;
+
+    private RenderFragment PaymentsIcon => @<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>;
+
+    private RenderFragment ChannelsIcon => @<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 2v4M12 18v4M2 12h4M18 12h4" /></svg>;
+
+    private RenderFragment MoreIcon => @<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="19" cy="12" r="1.4" /></svg>;
+}

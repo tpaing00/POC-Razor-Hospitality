@@ -1,0 +1,83 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+
+@* Handbook Part III · QtyStepper.
+   Classes: .u-qty-stepper and its button and span children.
+   Props:   Value, Min, Max, ValueChanged, ValueSize, DisplayText.
+   States:  at Min, the − is inert unless the call site treats zero as dropping
+            the line it sits on; at Max, the + is inert; a button tints
+            --upos-surface-hover on hover, and that rule lives inside the kit's
+            one @@media (hover:hover) guard, so no touch surface receives it.
+   Notes:   the buttons already set --upos-touch-terminal 48px against the
+            artboard's 24–40px, and Part II-A's preamble makes the shipped size
+            the rule wherever a spec names a stepper. What changes per call site
+            is ValueSize — 13px on a cart line, 32px in the guest-count dialog —
+            never the target. overflow:hidden is on the recipe, so no child
+            paints past the pill corner (§7).
+
+            DisplayText is one prop beyond Part III's five, and it is here
+            because Part II-A's cart line asks for it by name: the line's − and +
+            bracket the line total at 800/14px, not the count, which the line
+            already carries in its {qty} × {name} title. The readout slot is
+            where that money goes, so the slot takes a string when the call site
+            has one and renders Value when it does not. Nothing else changes: the
+            component still edits an int and still reports through
+            ValueChanged. *@
+
+<div @attributes="Attributes">
+    <button type="button"
+            aria-label="One fewer"
+            disabled="@AtMin"
+            @onclick="Decrement">&#8722;</button>
+
+    <span class="u-qty-stepper__value" style="@ValueStyle">@Readout</span>
+
+    <button type="button"
+            aria-label="One more"
+            disabled="@AtMax"
+            @onclick="Increment">+</button>
+</div>
+
+@code {
+    /// <summary>The count this control edits.</summary>
+    [Parameter] public int Value { get; set; }
+
+    /// <summary>The floor. A call site that drops its line at zero passes 0 and
+    /// handles the zero; a modal footer that floors at one passes 1.</summary>
+    [Parameter] public int Min { get; set; }
+
+    /// <summary>The ceiling, where one exists — the guest-count dialog's 12, the
+    /// split modal's 6. Null leaves the + always live.</summary>
+    [Parameter] public int? Max { get; set; }
+
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+
+    /// <summary>The readout size in px. 13 on a cart line, 32 in the guest-count
+    /// dialog. The target never moves with it.</summary>
+    [Parameter] public int ValueSize { get; set; } = 13;
+
+    /// <summary>What the readout slot shows when the figure between the buttons is
+    /// not the count — Part II-A's cart line, where the line total sits there.
+    /// Null renders <see cref="Value"/>.</summary>
+    [Parameter] public string? DisplayText { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private bool AtMin => Value <= Min;
+
+    private bool AtMax => Max is not null && Value >= Max;
+
+    private string Readout => DisplayText ?? Value.ToString();
+
+    /// <summary>Money in the readout is Archivo 800 (§6); a bare count keeps the
+    /// recipe's 700. Both take the call site's size.</summary>
+    private string ValueStyle =>
+        $"font-size:{ValueSize}px;font-weight:{(DisplayText is null ? 700 : 800)};";
+
+    private IReadOnlyDictionary<string, object> Attributes =>
+        UposAttributes.Merge(AdditionalAttributes, "u-qty-stepper");
+
+    private Task Decrement() => AtMin ? Task.CompletedTask : ValueChanged.InvokeAsync(Value - 1);
+
+    private Task Increment() => AtMax ? Task.CompletedTask : ValueChanged.InvokeAsync(Value + 1);
+}

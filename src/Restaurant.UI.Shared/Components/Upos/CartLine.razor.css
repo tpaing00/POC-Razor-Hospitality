@@ -1,0 +1,89 @@
+/* Part III · CartLine has no recipe in the kit — it composes QtyStepper,
+   UposIconButton and AllergenChip, and Part II-A · Order entry specs the line
+   itself: "{qty} × {name}" at 700/14px, the mods line at 400/12px
+   --upos-ink-subtle, then chips; on the right a send-one .u-icon-btn, then a
+   .u-qty-stepper whose − and + bracket the line total at 800/14px in a 52px
+   right-aligned slot. That treatment lives here, the way MenuItemCard's does.
+   Every value is a token. No :hover rule is written in this file: the terminal
+   has no hover and press feedback is the ripple tint (§8). */
+
+.u-cart-line {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-inline);
+}
+
+.u-cart-line__main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.u-cart-line__title {
+    font: 700 14px/1.35 Archivo, system-ui, sans-serif;
+    letter-spacing: -.01em;
+    color: var(--upos-ink);
+}
+
+.u-cart-line__mods {
+    font: 400 12px/1.4 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.u-cart-line__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--upos-space-gap-chip);
+}
+
+/* SENT / QUEUED read as status words, so they take the label class and the
+   status ink rather than a chip of their own (§4, §6). */
+.u-cart-line__state {
+    font: var(--upos-type-label);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--upos-status-ready-text);
+}
+
+.u-cart-line__state--queued {
+    color: var(--upos-status-late-text);
+}
+
+.u-cart-line__controls {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-row);
+}
+
+/* Sent fills the send control with --upos-grad-primary under the on-dark ink
+   (§4's on-dark set applies to every dark fill, not only the board). */
+.u-cart-line__send.is-sent {
+    background: var(--upos-grad-primary);
+    color: var(--upos-kds-ink);
+}
+
+/* The line total sits in the stepper's readout slot, 52px and right-aligned.
+   ::deep because the slot belongs to QtyStepper's markup, not this one's. */
+.u-cart-line__controls ::deep .u-qty-stepper__value {
+    min-width: 52px;
+    text-align: right;
+    padding: 0 4px;
+    color: var(--upos-ink);
+}
+
+/* Kiosk: Part I's roles at ×1.4, and the line clears --upos-touch-kiosk
+   (Guest-facing rules). */
+.u-cart-line--kiosk {
+    min-height: var(--upos-touch-kiosk);
+}
+
+.u-cart-line--kiosk .u-cart-line__title {
+    font: 700 19px/1.35 Archivo, system-ui, sans-serif;
+}
+
+.u-cart-line--kiosk .u-cart-line__mods {
+    font: 400 17px/1.4 Archivo, system-ui, sans-serif;
+}

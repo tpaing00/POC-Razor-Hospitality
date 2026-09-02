@@ -1,0 +1,149 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+@using Restaurant.Shared.Models.Dtos
+
+@* Handbook Part III · CartLine.
+   Classes: none of its own in the kit; composes <QtyStepper>, <UposIconButton>
+            and <AllergenChip>. The line's own treatment lives in
+            CartLine.razor.css, the way MenuItemCard's does.
+   Props:   Item, Mods, Allergens, LineTotal, Sent, Queued, Scale,
+            OnQuantityChange, OnSend, OnRemove.
+   States:  not sent — a paper-plane glyph on the inset; sent — a check on
+            --upos-grad-primary; queued — the line reads QUEUED in place of SENT;
+            quantity at zero, which drops the line.
+   Notes:   the terminal merges a repeat tap into the matching line at qty + 1.
+            Mods is a rendered string because no field carries a structured
+            selection (GAP-01); the POC's one per-line carrier is the free-text
+            OrderItem.SpecialInstructions, which OrderItemDto does carry. The
+            allergen row renders only what a call site hands it, and nothing
+            hands it anything today: MenuItem has no allergens (GAP-05).
+
+            No OnSend handler renders the send control inert rather than hiding
+            it — the same contract DataRow and MenuItemCard keep, where a missing
+            delegate means no interaction. Order entry passes none, because
+            sending one line has no endpoint: the POC posts a whole order.
+
+            The check is an inline SVG, never a ✓ character (§9). *@
+
+<div @attributes="Attributes">
+
+    <div class="u-cart-line__main">
+        <span class="u-cart-line__title">@Item.Quantity &times; @Item.MenuItemName</span>
+
+        @if (!string.IsNullOrWhiteSpace(Mods))
+        {
+            <span class="u-cart-line__mods">@Mods</span>
+        }
+
+        @if (Allergens is { Count: > 0 })
+        {
+            <span class="u-cart-line__chips">
+                @foreach (var allergen in Allergens)
+                {
+                    <AllergenChip Allergen="@allergen" />
+                }
+            </span>
+        }
+
+        @if (Queued)
+        {
+            <span class="u-cart-line__state u-cart-line__state--queued">QUEUED</span>
+        }
+        else if (Sent)
+        {
+            <span class="u-cart-line__state">SENT</span>
+        }
+    </div>
+
+    <div class="u-cart-line__controls">
+        <UposIconButton Icon="@SendIcon"
+                        Label="@SendLabel"
+                        HitArea="48"
+                        Disabled="@(!OnSend.HasDelegate)"
+                        OnClick="OnSend"
+                        class="@(Sent ? "u-cart-line__send is-sent" : "u-cart-line__send")" />
+
+        <QtyStepper Value="Item.Quantity"
+                    Min="0"
+                    ValueChanged="ChangeQuantity"
+                    ValueSize="14"
+                    DisplayText="@Money(LineTotal)" />
+    </div>
+</div>
+
+@code {
+    /// <summary>The line. Quantity, name and unit price all come off the DTO the
+    /// order posts with.</summary>
+    [Parameter] public OrderItemDto Item { get; set; } = new();
+
+    /// <summary>The middot-joined selection, rendered as text. Null renders
+    /// nothing (GAP-01).</summary>
+    [Parameter] public string? Mods { get; set; }
+
+    /// <summary>Allergen words for this line. Empty renders no chips (GAP-05).</summary>
+    [Parameter] public IReadOnlyList<string>? Allergens { get; set; }
+
+    /// <summary>The money between the − and the +, computed by the call site.</summary>
+    [Parameter] public decimal LineTotal { get; set; }
+
+    /// <summary>Sent to the kitchen — the check on --upos-grad-primary.</summary>
+    [Parameter] public bool Sent { get; set; }
+
+    /// <summary>Written while offline and waiting to replay: the line reads QUEUED
+    /// in place of SENT (§11). Nothing sets it today (GAP-10).</summary>
+    [Parameter] public bool Queued { get; set; }
+
+    /// <summary>Kiosk lifts the line's type and its targets (Guest-facing rules).</summary>
+    [Parameter] public TypeScale Scale { get; set; } = TypeScale.Terminal;
+
+    /// <summary>The new quantity. Zero reaches here only when
+    /// <see cref="OnRemove"/> has no handler.</summary>
+    [Parameter] public EventCallback<int> OnQuantityChange { get; set; }
+
+    /// <summary>Send this one line. No handler renders the control inert.</summary>
+    [Parameter] public EventCallback OnSend { get; set; }
+
+    /// <summary>Drop the line. The − at quantity 1 routes here when it is set.</summary>
+    [Parameter] public EventCallback OnRemove { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private IReadOnlyDictionary<string, object> Attributes => UposAttributes.Merge(
+        AdditionalAttributes,
+        "u-cart-line"
+            + (Scale == TypeScale.Kiosk ? " u-cart-line--kiosk" : string.Empty)
+            + (Sent ? " is-sent" : string.Empty)
+            + (Queued ? " is-queued" : string.Empty));
+
+    private string SendLabel => OnSend.HasDelegate
+        ? (Sent ? $"{Item.MenuItemName} is sent" : $"Send {Item.MenuItemName} to the kitchen")
+        : $"Sending one line has no endpoint · {Item.MenuItemName}";
+
+    /// <summary>Zero drops the line where the call site says so, and otherwise
+    /// reports zero and lets the call site decide.</summary>
+    private Task ChangeQuantity(int value)
+    {
+        if (value <= 0 && OnRemove.HasDelegate)
+        {
+            return OnRemove.InvokeAsync();
+        }
+
+        return OnQuantityChange.InvokeAsync(value);
+    }
+
+    private static string Money(decimal value) =>
+        "$" + value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>A paper plane until the line is sent, then a check (§9: an inline
+    /// SVG, never a glyph character).</summary>
+    private RenderFragment SendIcon => Sent
+        ? @<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+               <path d="M20 6L9 17l-5-5" />
+           </svg>
+        : @<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+               <path d="M22 2L11 13" />
+               <path d="M22 2l-7 20-4-9-9-4z" />
+           </svg>;
+}

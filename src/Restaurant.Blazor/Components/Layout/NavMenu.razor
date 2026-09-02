@@ -33,6 +33,19 @@
             <span>Menu</span>
         </NavLink>
 
+        @* Not a back-office destination: a development preview of the MAUI
+           terminal's Order entry screen, so the shared components can be worked
+           on without an emulator. It ships to no venue. *@
+        <NavLink class="u-nav-item" ActiveClass="is-active" href="preview/terminal"
+                 title="Development preview of the MAUI terminal screen">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="13" rx="2" />
+                <path d="M8 21h8M12 17v4" />
+            </svg>
+            <span>Terminal preview</span>
+        </NavLink>
+
         <span class="u-nav-item is-disabled" aria-disabled="true"
               title="Integrations · not built in this pass">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"

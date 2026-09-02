@@ -86,8 +86,35 @@
 
 /* Layouts. Tile is the terminal's grid square, GridCard the standing card,
    ListRow the horizontal row. */
+/* Tile is the terminal's grid square, and Part II-A specs its type directly:
+   "name 700/14px, price 800/15px in --upos-accent-deep". The card's defaults are
+   the standing card's — 800/18px name, mono price — so the tile carries the two
+   overrides here rather than at the call site, since every consumer of Tile is
+   that grid. Money is Archivo 800 on a staff surface, which is also what §6's
+   tie-break asks for. */
 .u-menu-card--tile {
     min-height: 132px;
+    gap: 6px;
+}
+
+.u-menu-card--tile .u-menu-card__name {
+    font: 700 14px/1.35 Archivo, system-ui, sans-serif;
+    letter-spacing: -.01em;
+}
+
+.u-menu-card--tile .u-menu-card__price {
+    font: 800 15px/1 Archivo, system-ui, sans-serif;
+    color: var(--upos-accent-deep);
+}
+
+/* Press feedback on a touch surface is the ripple tint, no transform (§8). The
+   lift above stays inside the kit's @media (hover:hover) guard. */
+.u-menu-card--tappable {
+    -webkit-tap-highlight-color: var(--upos-press-tint);
+}
+
+.u-menu-card--tappable:active {
+    background: var(--upos-press-tint);
 }
 
 .u-menu-card--grid {

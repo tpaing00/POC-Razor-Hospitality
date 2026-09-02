@@ -78,6 +78,13 @@
   --upos-ease: cubic-bezier(.22,1,.36,1);
   --upos-dur-fast: .25s;
   --upos-dur-slow: .45s;
+  /* Press feedback on a touch surface. §8 states the value literally —
+     "press feedback is a ripple tint rgba(51,100,139,.14) with no transform at
+     all" — and the kit had no token for it, so every terminal call site was
+     writing the literal. §12 rules that if the value you need has no token, add
+     the token. It does not move with the theme: the tint is the accent's blue at
+     .14 and reads on both grounds. */
+  --upos-press-tint: rgba(51,100,139,.14);
   /* Touch targets */
   --upos-touch-terminal: 48px;
   --upos-touch-kiosk: 60px;

@@ -1,0 +1,307 @@
+/* Part II-A · Order entry. Three bands between the shell's two bars: a 170px
+   category rail on the inset behind a right hairline, the item grid taking the
+   middle with its own scroll, and a 380px cart panel on the inset behind a left
+   hairline. Every value is a token or a Part II-A literal. No :hover rule in
+   this file — the terminal has no hover, and press feedback is the ripple tint
+   with no transform (§8). */
+
+.oe {
+    display: grid;
+    grid-template-columns: 170px minmax(0, 1fr) 380px;
+    min-height: 0;
+    height: 100%;
+}
+
+/* ─── Category rail ──────────────────────────────────────────────────────── */
+
+.oe__rail {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 10px;
+    overflow-y: auto;
+    border-right: 1px solid var(--upos-border);
+    background: var(--upos-surface-inset);
+}
+
+.oe__cat {
+    min-height: var(--upos-touch-terminal);
+    padding: 0 14px;
+    border: none;
+    border-radius: var(--upos-radius-inset);
+    background: transparent;
+    color: var(--upos-ink);
+    font: 700 13px/1.35 Archivo, system-ui, sans-serif;
+    letter-spacing: -.01em;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: var(--upos-press-tint);
+    transition: background var(--upos-dur-fast) var(--upos-ease);
+}
+
+.oe__cat:active {
+    background: var(--upos-press-tint);
+}
+
+.oe__cat.is-selected,
+.oe__cat.is-selected:active {
+    background: var(--upos-grad-primary);
+    color: var(--upos-kds-ink);
+}
+
+.oe__rail-empty {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── Item grid ──────────────────────────────────────────────────────────── */
+
+.oe__menu {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--upos-surface);
+}
+
+.oe__menu-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--upos-space-gap-card);
+    padding: 14px 22px 0;
+}
+
+.oe__notice {
+    flex: 1;
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.oe__grid-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 22px;
+}
+
+.oe__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: var(--upos-space-gap-card);
+}
+
+.oe__empty {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── Cart panel ─────────────────────────────────────────────────────────── */
+
+.oe__cart {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-left: 1px solid var(--upos-border);
+    background: var(--upos-surface-inset);
+}
+
+.oe__cart-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--upos-border);
+}
+
+.oe__check {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+}
+
+.oe__check-label {
+    font: 800 14px/1.25 Archivo, system-ui, sans-serif;
+    letter-spacing: -.01em;
+    color: var(--upos-ink);
+}
+
+.oe__lines {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 22px;
+}
+
+.oe__cart-empty {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.oe__foot {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+    padding: 18px 22px;
+    border-top: 1px solid var(--upos-border);
+}
+
+.oe__money {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    font: 700 13px/1.35 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+/* Money on a staff surface is Archivo 800, right-aligned so the decimals line
+   up — the tie-break §6 settles in money's favour. */
+.oe__money-value {
+    font-weight: 800;
+    color: var(--upos-ink);
+}
+
+.oe__money--blocked .oe__money-value {
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.oe__total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    padding-top: 4px;
+}
+
+.oe__total-label {
+    font: 700 13px/1.35 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink);
+}
+
+.oe__total-value {
+    font: 800 20px/1.1 Archivo, system-ui, sans-serif;
+    letter-spacing: -.02em;
+    color: var(--upos-ink);
+}
+
+/* The Charge action, rendered in position and inert. Quiet on the inset rather
+   than a disabled primary: a control that looks live and refuses a tap teaches
+   the wrong thing about the screen. It keeps the primary's 58px so the footer
+   stands as designed. */
+.oe__charge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 58px;
+    padding: 8px 16px;
+    box-sizing: border-box;
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+    border: 1px dashed var(--upos-border);
+    cursor: default;
+}
+
+.oe__charge-label {
+    font: 800 15px/1 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.oe__charge-note {
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── Blocked treatment ──────────────────────────────────────────────────────
+   The Menu manager's, unchanged: quiet, on the inset, behind a dashed hairline,
+   in --upos-ink-subtle, never an error treatment. The screen works exactly as
+   designed; what is missing is upstream of it. */
+
+.oe__blocked {
+    margin-top: var(--upos-space-gap-section);
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+    padding: var(--upos-space-pad-inset);
+    border: 1px dashed var(--upos-border);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+}
+
+.oe__blocked-what {
+    margin: 0;
+    font: var(--upos-type-row);
+    color: var(--upos-ink);
+}
+
+.oe__blocked-needs,
+.oe__gap-line {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.oe__blocked-needs code,
+.oe__gap-line code {
+    font: 700 11.5px/1 ui-monospace, Menlo, monospace;
+}
+
+/* A blocked control keeps its designed position and says what it is. */
+.oe__blocked-pill {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    padding: var(--upos-space-pad-pill);
+    border-radius: var(--upos-radius-pill);
+    background: var(--upos-surface-inset);
+    border: 1px dashed var(--upos-border);
+    color: var(--upos-ink-subtle);
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.oe__cart .oe__blocked-pill {
+    background: var(--upos-surface);
+}
+
+/* An error names the cause and the next move, in one line (§10). */
+.oe__error {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-status-late-text);
+}
+
+.oe__sent-line {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-status-ready-text);
+}
+
+/* The cart line and the send button are child components, so their layout hooks
+   need ::deep to reach past this screen's scope. */
+.oe__foot ::deep .u-btn {
+    width: 100%;
+}

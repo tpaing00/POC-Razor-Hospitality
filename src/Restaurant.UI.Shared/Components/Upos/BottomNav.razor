@@ -1,0 +1,71 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+
+@* Handbook Part III · BottomNav.
+   Classes: .u-nav-bottom, .u-nav-item, .is-active.
+   Props:   Items (IReadOnlyList<NavItem>), Active (string), OnNavigate.
+   States:  exactly one destination active, filled --upos-grad-primary with white
+            ink; the rest --upos-ink-subtle on transparent.
+   Notes:   five items, each flex:1 capped at 150px at --upos-radius-inset, a
+            17px icon over a 700/10.5px label. The kit's .is-active tints the ink
+            --upos-accent and both consumers fill instead, so the fill is a
+            call-site override — it lives in BottomNav.razor.css. This nav is the
+            only full-screen transition in the order flow: everything else opens
+            over the check (§11). The strip is touch, so it ships no :hover
+            transform; the kit's one hover guard already keeps its slide off a
+            touch surface.
+
+            An item with Enabled false renders as a span rather than a button, so
+            a destination that does not exist yet cannot be tapped into silence.
+            MORE is a placeholder in this handoff. *@
+
+<nav @attributes="Attributes" aria-label="@Label">
+    @foreach (var item in Items)
+    {
+        var isActive = string.Equals(item.Key, Active, StringComparison.OrdinalIgnoreCase);
+
+        @if (item.Enabled)
+        {
+            <button type="button"
+                    class="u-nav-item @(isActive ? "is-active" : null)"
+                    aria-current="@(isActive ? "page" : null)"
+                    @onclick="() => OnNavigate.InvokeAsync(item.Key)">
+                @if (item.Icon is not null)
+                {
+                    <span class="u-nav-item__icon">@item.Icon</span>
+                }
+                <span class="u-nav-item__label">@item.Label</span>
+            </button>
+        }
+        else
+        {
+            <span class="u-nav-item is-blocked"
+                  aria-disabled="true"
+                  title="@($"{item.Label} is not built in this pass")">
+                @if (item.Icon is not null)
+                {
+                    <span class="u-nav-item__icon">@item.Icon</span>
+                }
+                <span class="u-nav-item__label">@item.Label</span>
+            </span>
+        }
+    }
+</nav>
+
+@code {
+    /// <summary>The five destinations, in order.</summary>
+    [Parameter] public IReadOnlyList<NavItem> Items { get; set; } = Array.Empty<NavItem>();
+
+    /// <summary>The active destination's key. Exactly one is active.</summary>
+    [Parameter] public string? Active { get; set; }
+
+    [Parameter] public EventCallback<string> OnNavigate { get; set; }
+
+    /// <summary>The accessible name for the strip.</summary>
+    [Parameter] public string Label { get; set; } = "Destinations";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private IReadOnlyDictionary<string, object> Attributes =>
+        UposAttributes.Merge(AdditionalAttributes, "u-nav-bottom");
+}

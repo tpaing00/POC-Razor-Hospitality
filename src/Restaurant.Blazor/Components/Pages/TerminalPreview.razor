@@ -1,0 +1,51 @@
+@page "/preview/terminal"
+
+@* A development preview of a MAUI screen, not a back-office destination.
+
+   The terminal is Restaurant.Mobile — Razor in an Android WebView. The same
+   components render in a desktop browser, so this route stands them up at the
+   artboard's 1440×900 and lets the screen be seen and iterated without an
+   emulator on the machine. Nothing here is part of the product: the back office
+   has no terminal, and this page never ships to a venue.
+
+   Two things the preview must not lie about, because a desktop browser is not
+   the device:
+
+   · Hover. The kit declares every :hover rule inside one @@media (hover:hover)
+     guard, so a pointer surface gets the lift and the Android terminal never
+     does. That guard is correct and this browser satisfies it, which means the
+     preview would show a lift the device cannot produce. The frame below
+     retracts it, so what you see is what the terminal does: no transform, and
+     press feedback as the ripple tint (§8).
+   · Size. The frame is a fixed 1440×900 box and does not scale to the window.
+     A scaled preview reads as a smaller terminal and hides how much a 190px
+     tile actually is; scroll the frame instead.
+
+   The screen's own data behaves exactly as it does on the device: MenuDataSource
+   reads the API and falls back to seed data when it cannot be reached, and says
+   which of the two is on screen. *@
+
+<PageTitle>Terminal preview</PageTitle>
+
+<section class="panel tp">
+
+    <header class="tp__head">
+        <p class="tp__kicker">DEVELOPMENT PREVIEW &middot; MAUI SCREEN</p>
+        <h1 class="tp__title">Terminal &middot; Order entry</h1>
+        <p class="tp__note">
+            The same <code>TerminalShell</code> and <code>OrderEntryScreen</code> components
+            <code>Restaurant.Mobile</code> renders, stood up at the terminal's 1440&times;900 so the
+            screen can be worked on without an emulator. This route is not a back-office
+            destination and ships to no venue. Hover lifts are retracted inside the frame, because
+            the terminal has no hover.
+        </p>
+    </header>
+
+    <div class="tp__frame">
+        <div class="tp__device">
+            <TerminalShell ActiveDestination="order">
+                <OrderEntryScreen CustomerName="Mobile User" TableId="1" />
+            </TerminalShell>
+        </div>
+    </div>
+</section>

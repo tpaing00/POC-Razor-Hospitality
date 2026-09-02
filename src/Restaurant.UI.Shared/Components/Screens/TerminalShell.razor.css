@@ -1,0 +1,102 @@
+/* Part II-A · the terminal shell. --upos-radius-panel 26px on --upos-surface,
+   clipped, a fixed 76px top bar and a fixed 78px bottom nav with the destination
+   between them. Every value is a token or a Part II-A literal (§12 records that
+   the chrome dimensions — 76px, 78px — are literals the kit does not tokenize).
+   No :hover rule in this file: the terminal has no hover (§8). */
+
+.shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: var(--upos-radius-panel);
+    background: var(--upos-surface);
+    color: var(--upos-ink);
+}
+
+/* The one element in the product that spends --upos-blur-glass (§7). The veil
+   is what makes the blur mean anything; the artboard's flat inset fill would
+   render the blur invisible. */
+.shell__top {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-card);
+    height: 76px;
+    padding: 0 28px;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--upos-border);
+    background: var(--upos-surface-veil);
+    backdrop-filter: blur(var(--upos-blur-glass));
+    -webkit-backdrop-filter: blur(var(--upos-blur-glass));
+}
+
+.shell__identity {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-inline);
+    min-width: 0;
+}
+
+.shell__mark {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-grad-primary);
+    box-shadow: var(--upos-shadow-button);
+}
+
+.shell__venue {
+    font: 800 15px/1.2 Archivo, system-ui, sans-serif;
+    letter-spacing: -.01em;
+    color: var(--upos-ink);
+    white-space: nowrap;
+}
+
+.shell__status {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-inline);
+    font: 700 13px/1 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+/* The clock is a figure read digit by digit, so it is mono (§6). */
+.shell__clock {
+    font: var(--upos-type-mono);
+    color: var(--upos-ink-subtle);
+}
+
+/* A slot whose data does not exist yet: quiet, on the inset, naming its gap,
+   never an error treatment. The Menu manager's blocked-control pattern. */
+.shell__blocked {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--upos-space-pad-chip);
+    border-radius: var(--upos-radius-pill);
+    background: var(--upos-surface-inset);
+    color: var(--upos-ink-subtle);
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    cursor: default;
+}
+
+.shell__body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+/* The destination fills the space between the bars and does its own scrolling.
+   ::deep because the destination arrives as ChildContent and carries its own
+   scope, not this component's. */
+.shell__body ::deep > * {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+}
