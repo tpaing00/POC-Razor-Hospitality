@@ -2,8 +2,7 @@
 const CACHE_NAME = 'restaurant-cache-v1';
 const urlsToCache = [
     '/',
-    '/app.css',
-    '/bootstrap/bootstrap.min.css'
+    '/app.css'
 ];
 
 // Install event - cache resources
