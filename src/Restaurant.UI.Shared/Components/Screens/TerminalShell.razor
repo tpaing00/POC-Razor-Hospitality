@@ -1,6 +1,9 @@
 @namespace Restaurant.UI.Shared.Components.Screens
+@using System.Globalization
 @using Restaurant.UI.Shared.Components.Upos
+@using Restaurant.UI.Shared.Services
 @implements IDisposable
+@inject IDeviceStatus DeviceStatus
 
 @* Handbook Part II-A · the terminal shell. "The terminal is one 1440×900 shell
    at --upos-radius-panel 26px, --upos-surface, clipped, with a fixed 76px top
@@ -15,19 +18,48 @@
    hard-codes the artboard's dimensions, because the artboard's 1440×900 is one
    terminal, not the contract.
 
-   Two elements of the top bar are rendered in position and blocked rather than
-   invented, in the Menu manager's treatment — quiet, on the inset, naming the
-   gap, never an error:
+   The top bar carries three real readings and two blocked slots.
 
-   · the offline pill (GAP-10). §11 gives it a permanent slot beside the venue
-     name reading OFFLINE · N QUEUED. Nothing observes connectivity on this
-     terminal and no queue table exists, so a pill here would be a light with no
-     wire behind it.
+   Real:
+   · the clock — the device's own time, ticking on a timer this component
+     disposes.
+   · the battery level and the connection state, both from IDeviceStatus (§12).
+     They are here because the terminal now hides Android's status bar
+     (Part II-A · Handheld, "The host's system bars"): that bar carried the
+     clock, the signal and the battery, the clock was already here, and the
+     other two had nowhere else to go. On the handheld, where the server name
+     drops, the right of the bar is exactly the three things the status bar used
+     to show.
+
+   Blocked, in the Menu manager's treatment — quiet, on the inset, naming the
+   gap, never an error:
+   · the offline queue (GAP-10). §11's pill makes two claims and they became
+     true at different times. "The terminal is offline" is observable now and
+     the pill states it. "N writes are waiting to replay" is not, because no
+     queue table exists, so the pill carries no count and the missing queue is
+     named beside it. OFFLINE · 0 QUEUED would be the worst available answer:
+     it is the sentence a healthy terminal with an empty queue also prints, so
+     it cannot be read as a gap.
    · the server name (GAP-09) is a literal. There is no employee, role or shift
      record to read a name from, so the slot says so instead of inventing Maya.
 
-   The clock is real: it is the device's own time, and nothing upstream is
-   needed for it. It ticks on a timer the component disposes. *@
+   Nothing here renders a plausible-looking reading. Where IDeviceStatus answers
+   null — the back office's preview, which is a browser with no device — the
+   instrument cluster is replaced by one blocked chip saying so. §12 makes that
+   the rule: render the reading, or render the absence of the reading, and never
+   render a number nobody measured. *@
+
+@{
+    // Both readings are taken once per render and then used, rather than being
+    // asked for at each of the four places the markup below needs them. They are
+    // live properties over a platform API, so two reads inside one render can
+    // disagree: the network dropping between the offline pill's test and the
+    // instrument cluster's would draw a bar with a red pill and a connected
+    // glyph on it. One snapshot cannot contradict itself, and the Changed event
+    // brings the next one along immediately.
+    var isOnline = DeviceStatus.IsOnline;
+    var batteryLevel = DeviceStatus.BatteryLevel;
+}
 
 <div class="shell">
 
@@ -41,15 +73,33 @@
             <span class="shell__mark" aria-hidden="true"></span>
             <span class="shell__venue">@Venue &middot; @TerminalId</span>
 
-            @* Offline pill slot — GAP-10, in position and inert. Part II-A ·
-               Handheld keeps this slot below 800px and drops the server name
-               instead, so the label ships in two lengths and the container
-               query picks one. Both are in the DOM at every width; neither is
-               chosen in C#, because the shell's width is not a C# fact. *@
-            <span class="shell__blocked"
+            @* §11's offline pill, in its permanent slot beside the venue name,
+               and real for the half it can prove. It appears only when
+               IDeviceStatus reports a known offline: an unknown reading is not
+               a known offline, so the preview shows no pill and claims
+               nothing. Online it is absent, which is §11's rule — the absence
+               of the pill is the message.
+
+               It reads OFFLINE and stops there. No count, no QUEUED. *@
+            @if (isOnline == false)
+            {
+                <span class="u-pill-offline shell__offline">
+                    <span class="shell__offline-mark" aria-hidden="true">@WifiOffIcon</span>
+                    <span>OFFLINE</span>
+                </span>
+            }
+
+            @* The queue behind §11's count — GAP-10, in position and inert.
+               Part II-A · Handheld drops this chip below 800px and keeps the
+               pill: of the two, the red pill states the terminal's condition
+               and this one names a gap in the model, and on 393px of glass the
+               condition wins. Both labels are in the DOM at every width and the
+               container query picks one; neither is chosen in C#, because the
+               shell's width is not a C# fact. *@
+            <span class="shell__blocked shell__blocked--queue"
                   aria-disabled="true"
-                  title="The offline pill reads OFFLINE · N QUEUED off a replay queue. Nothing observes connectivity here and no queue table exists (GAP-10).">
-                <span class="shell__blocked-wide">OFFLINE PILL &middot; GAP-10</span>
+                  title="§11's pill reads OFFLINE · N QUEUED, where N counts writes waiting to replay. The connection is observed; the queue is not — no queue table exists, and with no idempotency key on CreateOrderDto a replayed write can double an order (GAP-10).">
+                <span class="shell__blocked-wide">OFFLINE QUEUE &middot; GAP-10</span>
                 <span class="shell__blocked-narrow">GAP-10</span>
             </span>
         </div>
@@ -63,6 +113,63 @@
                   title="The server on shift comes from an employee record. The POC has no employee, role or shift model, so a name here would be a literal (GAP-09).">
                 SERVER &middot; GAP-09
             </span>
+
+            @* ─── Instrument cluster ───────────────────────────────────────
+               Connectivity and battery, between the server and the clock, so
+               identity reads left and instruments read right and the clock ends
+               the bar where it always did.
+
+               Each instrument draws only when it has a reading. A host that can
+               read one and not the other draws the one it has; a host that can
+               read neither draws the blocked chip below instead. That is why
+               both readings are nullable rather than defaulting to zero and
+               false: a host that cannot read a battery has not read a flat one,
+               and a host that cannot see a network has not seen it fail. *@
+            <span class="shell__instruments">
+                @if (isOnline is bool online)
+                {
+                    <span class="shell__signal @(online ? null : "shell__signal--off")"
+                          role="img"
+                          aria-label="@(online ? "Network connected" : "No network")">
+                        @(online ? WifiIcon : WifiOffIcon)
+                    </span>
+                }
+
+                @if (batteryLevel is double level)
+                {
+                    var percent = (int)Math.Round(Math.Clamp(level, 0, 1) * 100);
+
+                    @* The fill is the charge: the glyph's inner well runs from
+                       x=4 to x=16, so 12 units span empty to full. Bound, not
+                       stepped — this is a measurement, and rounding it into
+                       four bars would be drawing less than was read. *@
+                    <span class="shell__battery @(percent <= LowBatteryPercent ? "shell__battery--low" : null)"
+                          role="img"
+                          aria-label="@($"Battery {percent} percent")">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="2" y="7" width="16" height="10" rx="2" />
+                            <path d="M21 10v4" />
+                            <rect x="4" y="9" width="@((12d * Math.Clamp(level, 0, 1)).ToString("0.##", CultureInfo.InvariantCulture))" height="6" rx="1" fill="currentColor" stroke="none" />
+                        </svg>
+                        <span class="shell__battery-level">@percent%</span>
+                    </span>
+                }
+
+                @* Neither reading available. One chip for both, in the blocked
+                   treatment, in the cluster's own place — so the bar says which
+                   instruments are missing and why, rather than falling silent
+                   and reading like a terminal that is simply fine. *@
+                @if (isOnline is null && batteryLevel is null)
+                {
+                    <span class="shell__blocked"
+                          aria-disabled="true"
+                          title="Battery level and connection state come from the device, through IDeviceStatus (§12). This host has no device to read — it is a browser standing the terminal's components up at the artboard's size — so it reports nothing rather than drawing a plausible battery.">
+                        <span class="shell__blocked-wide">BATTERY AND SIGNAL &middot; NO DEVICE READING</span>
+                        <span class="shell__blocked-narrow">NO READING</span>
+                    </span>
+                }
+            </span>
+
             <span class="shell__clock">@_now.ToString("HH:mm")</span>
         </div>
     </header>
@@ -103,6 +210,16 @@
     /// this pass, so this fires with "order" and nothing else.</summary>
     [Parameter] public EventCallback<string> OnNavigate { get; set; }
 
+    /// <summary>
+    /// The charge at or below which the battery inks --upos-status-late-text. §4:
+    /// red marks a problem that exists, and a terminal about to die mid-service is
+    /// one. Part II-A records the 20 as a policy literal rather than a token — it is
+    /// a threshold a condition tests, not a value a declaration takes, so §12's
+    /// add-the-token rule does not reach it, exactly as it does not reach the
+    /// handheld step's 800.
+    /// </summary>
+    private const int LowBatteryPercent = 20;
+
     private DateTime _now = DateTime.Now;
     private Timer? _clock;
 
@@ -139,7 +256,28 @@
         }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
-    public void Dispose() => _clock?.Dispose();
+    /// <summary>
+    /// The battery and the connection are pushed, not polled: the host raises
+    /// Changed off the platform's own callbacks, so the bar re-renders when a
+    /// reading actually moves and at no other time. A host with nothing to report
+    /// never raises it, which is why the preview costs nothing.
+    /// </summary>
+    protected override void OnInitialized() => DeviceStatus.Changed += OnDeviceStatusChanged;
+
+    private void OnDeviceStatusChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        DeviceStatus.Changed -= OnDeviceStatusChanged;
+        _clock?.Dispose();
+    }
+
+    // Top-bar instruments: 15px inline stroke SVG, §9's dense band. wifi and
+    // wifi-off are both on §9's expected POS glyph list; the paths are Lucide's, on
+    // the same 24px grid and the same stroke model, pasted inline as §9 requires.
+    private RenderFragment WifiIcon => @<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><path d="M12 20h.01" /></svg>;
+
+    private RenderFragment WifiOffIcon => @<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l22 22" /><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" /><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" /><path d="M10.71 5.05A16 16 0 0 1 22.58 9" /><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><path d="M12 20h.01" /></svg>;
 
     // Icons: 17px inline stroke SVG at stroke-width 2, currentColor (§9).
     private RenderFragment OrderIcon => @<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v5H4zM4 13h16v7H4z" /><path d="M8 17h4" /></svg>;

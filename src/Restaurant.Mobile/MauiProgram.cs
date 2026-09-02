@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Restaurant.Mobile.Services;
 using Restaurant.UI.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -56,6 +57,17 @@ public static class MauiProgram
         // office already registers it (Restaurant.Blazor/Program.cs); the shared screen
         // needs it in both hosts.
         builder.Services.AddScoped<MenuDataSource>();
+
+        // The terminal hides Android's status bar, so the shell's top bar has to
+        // carry the battery and the connection itself (handbook §12, Part II-A ·
+        // Handheld). Restaurant.UI.Shared owns the question as IDeviceStatus and
+        // cannot answer it — it has no MAUI reference — so this host registers the
+        // implementation that reads Battery.Default and Connectivity.Default.
+        //
+        // Singleton, not scoped: it holds two platform event subscriptions and
+        // there is exactly one device behind them. It is disposed with the
+        // container.
+        builder.Services.AddSingleton<IDeviceStatus, MauiDeviceStatus>();
 
         // Add local SQLite database (we'll create this next)
         var dbPath = Path.Combine(FileSystem.AppDataDirectory, "restaurant.db");

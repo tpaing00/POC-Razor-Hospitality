@@ -16,7 +16,16 @@
 
             An item with Enabled false renders as a span rather than a button, so
             a destination that does not exist yet cannot be tapped into silence.
-            MORE is a placeholder in this handoff. *@
+            MORE is a placeholder in this handoff.
+
+            Below 800px of shell width the labels lay out away and the icons
+            carry the destinations (Part II-A · Handheld; the measurement is in
+            BottomNav.razor.css). Every item carries its Label as an aria-label
+            at every width, so the label is hidden from the layout and never
+            from the accessibility tree: the strip reads identically to a screen
+            reader at 393px and at 1440px, and an unbuilt destination still
+            announces what it is. At 1440 the aria-label and the visible text
+            agree, so it changes nothing there. *@
 
 <nav @attributes="Attributes" aria-label="@Label">
     @foreach (var item in Items)
@@ -28,6 +37,7 @@
             <button type="button"
                     class="u-nav-item @(isActive ? "is-active" : null)"
                     aria-current="@(isActive ? "page" : null)"
+                    aria-label="@item.Label"
                     @onclick="() => OnNavigate.InvokeAsync(item.Key)">
                 @if (item.Icon is not null)
                 {
@@ -40,6 +50,7 @@
         {
             <span class="u-nav-item is-blocked"
                   aria-disabled="true"
+                  aria-label="@item.Label"
                   title="@($"{item.Label} is not built in this pass")">
                 @if (item.Icon is not null)
                 {

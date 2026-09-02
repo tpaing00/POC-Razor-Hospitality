@@ -72,3 +72,88 @@
 .u-nav-item.is-blocked:active {
     background: transparent;
 }
+
+/* ─── Handheld ───────────────────────────────────────────────────────────────
+   Part II-A · Order entry · Handheld, provisional. One step at 800px of shell
+   width, on the container TerminalShell.razor.css names. The strip only takes
+   this rule inside that container, so the recipe's other call sites cannot
+   match a container they do not sit in — the same argument MenuItemCard follows
+   one screen over, and the reason no component here takes a width flag.
+
+   THE LABELS DO NOT FIT, AND THE PREVIOUS CLAIM THAT THEY DID WAS ARITHMETIC.
+   It read "five items into 393px is 72px each, and PAYMENTS measures under
+   that", which divides the strip as though flex:1 could shrink an item to any
+   width. It cannot: a flex item's default min-width:auto floors it at its own
+   min-content, an unbreakable word is its own min-content, and so each item's
+   floor is its label plus its padding. Measured in the browser at 393px, the
+   five floors are ORDER 67px, TABLES 71.63px, PAYMENTS 92.25px, CHANNELS 93px
+   and MORE 59.05px — 382.93px — and with four 8px gaps and 28px of strip
+   padding that is 442.93px into 393px. The strip does not compress, it
+   overflows by 49.93px, and the shell's own overflow:hidden cuts whatever is
+   last: MORE begins at 369.88px, so 23px of a 59px item survives and its label
+   renders as MO. The clipping is a sum, and no distribution rule fixes a sum.
+
+   Three treatments were measured against it.
+
+   · Smaller labels. The labels are 302.93px of the 442.93px, so they have to
+     lose 49.93px — 16.5%. Dropping the label class's .16em tracking alone saves
+     52.08px across the 31 characters and closes it BY 2.15px, with every label
+     then exactly touching its own padding: a fit with no tolerance, decided by
+     a font metric, on a terminal that self-hosts Archivo and would clip on any
+     frame rendered from the fallback stack. It also spends the one property §6's
+     label class is defined by to buy two pixels. Going after the size instead
+     needs about 9px at .06em to leave any margin, and a CSS pixel on this device
+     is 1/160 inch against the preview's 1/96 — a 9px label in the hand is what a
+     5.4px label looks like in the frame.
+   · MORE collapsing into an overflow. Circular — MORE is the overflow
+     destination — and it does not reach the defect: four items into 393px leaves
+     each label 65.25px and CHANNELS needs 73px, so the strip still overflows.
+     MORE is where the clipping showed, not where it came from.
+   · Icon-only, which is what ships. Five 20px glyphs with 8px gaps and 8px of
+     strip padding fit with room to spare, and every target clears
+     --upos-touch-terminal by 30px.
+
+   It stays recognisable against 1440 because everything that identifies a
+   destination is still there: the same five glyphs, in the same order, with the
+   same active fill and the same on-dark ink. The strip's geometry does not move
+   — 78px, --upos-surface-inset, the top hairline, flex:1, the touch floor. Only
+   the word goes, and the label is hidden from the layout rather than removed
+   from the document (BottomNav.razor carries it as an aria-label at every
+   width). */
+
+@container upos-shell (max-width: 800px) {
+
+    /* --upos-space-gap-row is §11's floor for adjacent targets and the strip's
+       own gap already sits on it, so only the side padding moves — to the same
+       step, which is what the rest of the handheld chrome does with its edges. */
+    .u-nav-bottom {
+        padding: 0 var(--upos-space-gap-row);
+    }
+
+    .u-nav-item {
+        padding: var(--upos-space-gap-row) var(--upos-space-gap-chip);
+    }
+
+    /* The glyph now carries the destination alone. §9 draws dense UI at 15-18px
+       and the kitchen display and kiosk at 20-24px, and an unlabelled icon is
+       the second case however small the screen is: 20px is the bottom of that
+       band and the smallest step that reads as a nav rather than as a row of
+       specks in a 78px strip. */
+    .u-nav-item__icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* ::deep because the glyph arrives as a RenderFragment from the call site
+       and carries that component's scope, not this one's. The SVG sets width
+       and height as attributes, so the box has to be told as well as the
+       wrapper or it stays 17px inside a 20px slot. */
+    .u-nav-item__icon ::deep svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .u-nav-item__label {
+        display: none;
+    }
+}

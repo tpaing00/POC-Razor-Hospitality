@@ -60,16 +60,21 @@
        viewport rule would flip both frames together the moment the window
        narrowed, and would report the opposite of the truth about the device.
 
-       393x713 is what the Datalogic Memor 20's WebView reports for its
-       1080x2160 screen at 440dpi, now that MainActivity fits the window to the
-       system bars: the panel less a 66px status bar and a 132px navigation bar
-       is 1962 device pixels, which is 713 CSS pixels at 440dpi. It read 393x785
-       while the window drew edge to edge, and 785 was the defect — the shell was
-       measuring the two system bars as though they were screen. It is a real
-       measurement off a real device, not a chosen number — and Part II-A ·
-       Handheld is provisional for exactly that reason: the device is one
-       candidate and the fleet is not settled. *@
-    <p class="tp__kicker">393 &times; 713 &middot; handheld &middot; provisional</p>
+       393x785 is what the Datalogic Memor 20's WebView reports for its
+       1080x2160 screen at 440dpi, now that MainActivity hides both of Android's
+       system bars: the terminal owns the whole panel, so the WebView is the
+       whole panel. The number has moved twice. It read 393x785 while the window
+       drew edge to edge underneath the bars, and that 785 was a defect — the
+       shell was measuring 72px of chrome it did not own and was clipped at both
+       ends. It read 393x713 while the window was fitted to them — 2160 less a
+       66px status bar and a 132px navigation bar is 1962 device pixels, which is
+       713 CSS pixels — which was correct for a terminal that shares its screen
+       with the host. It reads 393x785 again now, the same figure as the defect,
+       reached by removing the bars rather than by ignoring them. It is a real
+       measurement off a real device at every step, not a chosen number — and
+       Part II-A · Handheld is provisional for exactly that reason: the device is
+       one candidate and the fleet is not settled. *@
+    <p class="tp__kicker">393 &times; 785 &middot; handheld &middot; provisional</p>
 
     <div class="tp__frame tp__frame--handheld">
         <div class="tp__device tp__device--handheld">

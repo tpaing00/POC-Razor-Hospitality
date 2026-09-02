@@ -83,21 +83,23 @@
     }
 }
 
-/* The handheld frame. 393x713 is the Memor 20's reported viewport; the frame is
+/* The handheld frame. 393x785 is the Memor 20's reported viewport; the frame is
    fixed at it for the same reason the 1440x900 one is fixed — a scaled preview
    reads as a different device. It does not stretch to the page, so it sits at
    the left of its scroller rather than centred, where a 1440px frame's left
    edge also is.
 
-   785 was the number until the host stopped drawing behind Android's system
-   bars, and 785 was the whole 1080x2160 panel: the shell was measuring a box
-   that included the status bar and the navigation bar, which is the same fact
-   as the screen being clipped at both ends. MainActivity now calls
-   WindowCompat.SetDecorFitsSystemWindows(window, true), so the WebView is laid
-   out between them — 2160 less a 66px status bar and a 132px navigation bar is
-   1962 device pixels, and at 440dpi that is 713 CSS pixels. The 72px is not a
-   rounding: it is two system bars, and a preview frame that keeps them reads
-   72px more check than the device has. */
+   This number has moved twice and the sequence is worth keeping, because two of
+   the three figures were right about a terminal this one is not. It was 785
+   while the WebView drew edge to edge underneath Android's system bars, and
+   that 785 was a defect: the shell was measuring 72px of chrome it did not own
+   and was clipped at both ends. It was 713 once MainActivity fitted the window
+   to the bars — 2160 less a 66px status bar and a 132px navigation bar is 1962
+   device pixels, and at 440dpi that is 713 CSS pixels — which was correct for a
+   terminal that shares its screen with the host. It is 785 again now, because
+   MainActivity hides both bars: the terminal owns the whole 1080x2160 panel, so
+   the WebView is the panel. Same figure as the defect, reached by removing the
+   bars rather than by ignoring them. */
 .tp__frame--handheld {
     display: flex;
     justify-content: flex-start;
@@ -105,6 +107,6 @@
 
 .tp__device--handheld {
     width: 393px;
-    height: 713px;
+    height: 785px;
     flex: none;
 }

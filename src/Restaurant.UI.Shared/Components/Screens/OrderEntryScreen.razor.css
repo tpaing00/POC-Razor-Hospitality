@@ -329,8 +329,13 @@
    the three panes cannot be drawn: 170px rail + 380px cart + 44px grid padding
    + one 190px tile is 784px before the screen holds an item, and the device
    that prompted this — a Datalogic Memor 20, 1080x2160 at 440dpi — reports a
-   393x713 CSS-pixel portrait viewport once its host stops drawing behind
-   Android's status and navigation bars.
+   393x785 CSS-pixel portrait viewport, the whole panel, because the terminal
+   hides Android's status and navigation bars rather than sharing the screen
+   with them (MainActivity; Part II-A · Handheld, "The host's system bars"). It
+   reported 393x713 while the window was fitted to those bars. Nothing in this
+   file was written against either height — the rules below size from the
+   container and from tokens, which is why the viewport could change underneath
+   them without a single value moving.
 
    The step measures the shell, not the viewport, so the back office's fixed
    1440x900 preview frame keeps the wide layout however narrow the browser

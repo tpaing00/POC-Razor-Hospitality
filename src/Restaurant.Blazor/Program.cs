@@ -53,6 +53,14 @@ builder.Services.AddScoped<RestaurantApiService>();
 builder.Services.AddScoped<MenuDataSource>();
 builder.Services.AddScoped<DashboardDataSource>();
 
+// The terminal preview renders the same TerminalShell Restaurant.Mobile does, and
+// that shell now reads the device's battery and connection (handbook §12). This
+// host is a desktop browser with no device to read, so it registers the answer that
+// says so. Nothing here invents a charge level: the shell draws the absence of a
+// reading in the blocked treatment, which is what keeps the preview honest about
+// being a preview.
+builder.Services.AddSingleton<IDeviceStatus, UnknownDeviceStatus>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
