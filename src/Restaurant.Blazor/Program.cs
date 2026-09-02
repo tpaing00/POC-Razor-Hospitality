@@ -51,6 +51,7 @@ Console.WriteLine($"API Base URL NEW: {apiBaseUrl}");
 // Add API service
 builder.Services.AddScoped<RestaurantApiService>();
 builder.Services.AddScoped<MenuDataSource>();
+builder.Services.AddScoped<DashboardDataSource>();
 
 var app = builder.Build();
 

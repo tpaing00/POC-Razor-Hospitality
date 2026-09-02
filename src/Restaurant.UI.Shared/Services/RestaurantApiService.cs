@@ -84,4 +84,28 @@ public class RestaurantApiService
             new UpdateOrderStatusDto { Status = status });
         response.EnsureSuccessStatusCode();
     }
+
+    // Reports
+
+    /// <summary>
+    /// The Dashboard aggregate for a period. Omit both bounds to get the API's default window,
+    /// the current UTC day. Dates are sent round-trip ("o") so the server reads the instant that
+    /// was meant rather than a locale-formatted string.
+    /// </summary>
+    public async Task<DashboardDto?> GetDashboardAsync(DateTime? from = null, DateTime? to = null)
+    {
+        var query = new List<string>();
+
+        if (from.HasValue)
+            query.Add($"from={Uri.EscapeDataString(from.Value.ToString("o"))}");
+
+        if (to.HasValue)
+            query.Add($"to={Uri.EscapeDataString(to.Value.ToString("o"))}");
+
+        var url = query.Count == 0
+            ? "api/reports/dashboard"
+            : $"api/reports/dashboard?{string.Join("&", query)}";
+
+        return await _httpClient.GetFromJsonAsync<DashboardDto>(url);
+    }
 }
