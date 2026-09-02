@@ -41,6 +41,112 @@
     font: 700 12px/1 ui-monospace, Menlo, monospace;
 }
 
+/* ─── The device-size switcher ───────────────────────────────────────────────
+   Development tooling, and drawn as such: it is deliberately quieter than the
+   frame it wraps — no panel, no shadow, one hairline and the inset — so the eye
+   goes to the terminal and not to the controls around it. It has no handbook
+   specification and no product counterpart, but every value here is a token,
+   because a dev tool drawn in stray hex is a second palette on the same page. */
+
+.tp__tool {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-card);
+    padding: var(--upos-space-pad-card-sm);
+    border: 1px dashed var(--upos-border);
+    border-radius: var(--upos-radius-card);
+    background: var(--upos-surface-inset);
+}
+
+.tp__tool-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+}
+
+/* The dashed border and this kicker are the two marks that say "not product".
+   They are the only two, and they are enough. */
+.tp__tool-kicker {
+    margin: 0;
+    font: var(--upos-type-label);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.tp__tool-note {
+    margin: 0;
+    max-width: 78ch;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.tp__sizes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--upos-space-gap-row);
+}
+
+/* Not .u-btn. The kit's button is a product control with a product's weight,
+   and five of them in a row would out-shout the terminal underneath. This is a
+   plain two-line chip on the surface: the device on top, its box below. */
+.tp__size {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--upos-space-pad-inset);
+    border: 1px solid var(--upos-border);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface);
+    color: var(--upos-ink-subtle);
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--upos-dur-fast) var(--upos-ease),
+                border-color var(--upos-dur-fast) var(--upos-ease),
+                color var(--upos-dur-fast) var(--upos-ease);
+}
+
+.tp__size-name {
+    font: var(--upos-type-row);
+    color: var(--upos-ink);
+}
+
+/* The two numbers are read as numbers, so they are mono (§6) — the same
+   reasoning the shell's clock and battery take. */
+.tp__size-dim {
+    font: var(--upos-type-mono);
+    font-size: 11px;
+    color: var(--upos-ink-subtle);
+}
+
+/* This is a pointer surface — the back office, not the terminal — so the hover
+   guard the frame retracts inside itself is correct out here. */
+@media (hover: hover) {
+    .tp__size:hover {
+        background: var(--upos-surface-hover);
+        border-color: var(--upos-accent);
+    }
+}
+
+.tp__size:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}
+
+.tp__size--on {
+    border-color: var(--upos-accent);
+    background: var(--upos-grad-primary);
+}
+
+/* #fff for ink on a gradient is the kit's own convention, not a stray colour:
+   the kit exposes no on-accent ink token and writes the literal at every one of
+   its seven filled controls (.u-btn--primary, .u-tender-tile.is-selected and
+   the rest). This follows it rather than inventing an eighth spelling. */
+.tp__size--on .tp__size-name,
+.tp__size--on .tp__size-dim {
+    color: #fff;
+}
+
 /* The frame scrolls; the device does not scale. A scaled preview reads as a
    smaller terminal and hides how much a 190px tile is. */
 .tp__frame {
@@ -50,11 +156,97 @@
     background: var(--upos-ground);
 }
 
+/* The stage is the switcher's box and the branch readout's container in one.
+
+   Its width is set inline from the active preset and the device fills it, so
+   the stage's inline size is the shell's inline size — the same number the
+   shell's own @container upos-shell condition is tested against. That is what
+   makes the readout below trustworthy: it is a second container at the same
+   threshold on the same width, not a guess. It cannot be the shell's own
+   container, because the badge sits outside the shell and a container query
+   only reaches descendants.
+
+   The name is distinct from upos-shell so the two never resolve each other's
+   conditions. */
+.tp__stage {
+    container-type: inline-size;
+    container-name: upos-preview-stage;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+}
+
 .tp__device {
-    width: 1440px;
+    width: 100%;
     height: 900px;
+    flex: none;
     border-radius: var(--upos-radius-panel);
     box-shadow: var(--upos-shadow-card);
+}
+
+/* The branch readout. Quiet, under the frame, and stating the condition in the
+   shell's own words so there is no translating to do. */
+.tp__branch {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: var(--upos-space-gap-chip);
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.tp__branch code {
+    font: 700 12px/1 ui-monospace, Menlo, monospace;
+}
+
+.tp__branch-line {
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--upos-space-gap-chip);
+}
+
+/* The handheld line is the one that is hidden above the step; below it they
+   swap. Both are in the markup, so the text is selectable and greppable. */
+.tp__branch-line--handheld {
+    display: none;
+}
+
+.tp__branch-tag {
+    flex: none;
+    padding: var(--upos-space-pad-chip);
+    border-radius: var(--upos-radius-pill);
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.tp__branch-tag--wide {
+    background: var(--upos-accent);
+}
+
+/* Not a status colour. §4 reserves red for a problem that exists and orange for
+   a thing in flight, and neither branch is either: both are correct branches of
+   a correct rule, and only one of them is on screen. So the pair is told apart
+   by the kit's two darks — the accent above the step, the dark panel below it —
+   which reads at a glance without claiming anything is wrong. */
+.tp__branch-tag--handheld {
+    background: var(--upos-panel-dark);
+}
+
+/* The mirror of Part II-A's step, at the same 800px and on the same width.
+   max-width is inclusive, so a stage exactly 800px wide reports HANDHELD — and
+   so does the shell inside it, which is the point of stating it here. */
+@container upos-preview-stage (max-width: 800px) {
+    .tp__branch-line--wide {
+        display: none;
+    }
+
+    .tp__branch-line--handheld {
+        display: inline-flex;
+    }
 }
 
 /* The device has no hover. The kit's lifts are correctly guarded behind
