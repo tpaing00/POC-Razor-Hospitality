@@ -1,86 +1,393 @@
-/* Landing panel. Panel chrome comes from the shell (MainLayout.razor.css);
-   this file sets only the type inside it, per handbook §6 and §10. */
+/* Dashboard — handbook Part II-B. Every value here is either a token or a
+   literal the spec states in px. The one hex is #fff for ink on
+   --upos-grad-primary, which is what the kit itself writes (.u-btn--primary,
+   .u-tender-tile.is-selected) and what NavMenu's active pill writes: white on
+   the gradient is fixed in both themes, so it cannot come from --upos-surface,
+   which inverts. Every other color here is a token.
 
-.panel {
+   Part III names the AI insight banner, the daypart columns and the top-items
+   rows as screen-level markup over the tokens rather than components, so the
+   blocks below are this page's and the KPI tiles come from StatCard. */
+
+.dash {
     display: flex;
     flex-direction: column;
+    gap: var(--upos-space-gap-section);
+}
+
+/* One quiet line above everything, in the Menu manager's treatment: inset fill,
+   subtle ink, no border-as-alarm. The screen is working exactly as designed. */
+.dash__notice {
+    margin: 0;
+    padding: var(--upos-space-pad-inset);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── AI insight banner ─────────────────────────────────────────────────────
+   --upos-grad-primary, white ink, --upos-shadow-button, 22px 26px, 8px gaps,
+   --upos-radius-panel. It rises with fl-rise at §8's own .6s. */
+
+.dash__ai {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+    padding: 22px 26px;
+    border-radius: var(--upos-radius-panel);
+    background: var(--upos-grad-primary);
+    box-shadow: var(--upos-shadow-button);
+    color: #fff;
+    animation: fl-rise .6s var(--upos-ease);
+}
+
+/* fl-sheen, and this is the only surface in the product that runs it (§8). The
+   keyframe sweeps background-position, so the sweeping layer carries a 320px
+   band of light and nothing else. The band is --upos-surface-veil — a token —
+   dimmed with opacity rather than with a new value, the same move §3 makes for a
+   step between the two inks. */
+.dash__ai::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(105deg,
+        transparent 0%,
+        var(--upos-surface-veil) 50%,
+        transparent 100%);
+    background-size: 320px 100%;
+    background-repeat: no-repeat;
+    opacity: .35;
+    animation: fl-sheen 5.5s var(--upos-ease) infinite;
+}
+
+.dash__ai-kicker {
+    position: relative;
+    margin: 0;
+    font: var(--upos-type-label);
+    font-size: 9.5px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--upos-on-dark-accent);
+}
+
+.dash__ai-quote {
+    position: relative;
+    margin: 0;
+    max-width: 76ch;
+    font: 700 17px/1.5 Archivo, system-ui, sans-serif;
+    letter-spacing: -.01em;
+}
+
+/* The honesty line, quieter than the quote and on the same dark fill, so it
+   travels with the sample it labels rather than sitting under the banner as a
+   caption someone can miss. */
+.dash__ai-note {
+    position: relative;
+    margin: 0;
+    max-width: 86ch;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-on-dark-accent);
+}
+
+/* ─── Title row ─────────────────────────────────────────────────────────── */
+
+.dash__title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
     gap: var(--upos-space-gap-inline);
 }
 
-.kicker {
+.dash__title {
     margin: 0;
+    font: 800 24px/1.15 Archivo, system-ui, sans-serif;
+    letter-spacing: -.02em;
+    color: var(--upos-ink);
+}
+
+/* A text button, not a .u-btn: the spec draws it as a 700/11px underlined line
+   in --upos-ink-subtle. Ghost-button hover, taking --upos-ink for the darkened
+   step (§8's table names a literal there; the token is the nearest step and
+   this file ships no hex). */
+.dash__ai-toggle {
+    flex: none;
+    padding: 0;
+    border: none;
+    background: none;
+    font: 700 11px/1 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    transition: color var(--upos-dur-fast) var(--upos-ease);
+}
+
+.dash__ai-toggle:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 3px;
+}
+
+@media (hover: hover) {
+    .dash__ai-toggle:hover {
+        color: var(--upos-ink);
+    }
+}
+
+/* ─── KPI strip ─────────────────────────────────────────────────────────── */
+
+.dash__strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--upos-space-gap-card);
+}
+
+/* A blocked tile stands in a live tile's slot, so it takes .u-stat-card's
+   geometry — 20px 22px, --upos-radius-card, a 6px column — and the Menu
+   manager's blocked treatment on top of it: inset fill, dashed hairline, subtle
+   ink throughout, no shadow, no lift, no value. It carries no figure at all,
+   because a placeholder number on a KPI tile is indistinguishable from a
+   measured one. */
+.dash__tile {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px 22px;
+    border: 1px dashed var(--upos-border);
+    border-radius: var(--upos-radius-card);
+    background: var(--upos-surface-inset);
+}
+
+.dash__tile-label {
     font: var(--upos-type-label);
-    letter-spacing: .16em;
+    letter-spacing: .15em;
     text-transform: uppercase;
     color: var(--upos-ink-subtle);
 }
 
-h1 {
+.dash__tile-what {
     margin: 0;
-    font: var(--upos-type-display);
-    letter-spacing: -.03em;
+    font: 700 12.5px/1.4 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.dash__tile-needs {
+    margin: 0;
+    font: 400 12.5px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.dash__gap-line {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.dash__tile code,
+.dash__gap-line code {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: .92em;
+}
+
+/* ─── Charts row ────────────────────────────────────────────────────────── */
+
+.dash__row {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.dash__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-card);
+    padding: 24px;
+    border-radius: var(--upos-radius-card);
+    background: var(--upos-surface-inset);
+}
+
+.dash__card-title {
+    margin: 0;
+    font: var(--upos-type-row);
+    letter-spacing: -.01em;
     color: var(--upos-ink);
 }
 
-.lede {
-    margin: 0;
-    max-width: 68ch;
-    font: var(--upos-type-body);
-    color: var(--upos-ink);
+/* ─── Sales by daypart ──────────────────────────────────────────────────────
+   Four columns 22px apart in a 180px band. The value sits above the fill and
+   the name below the baseline, so the band itself is nothing but bars. */
+
+.dash__band {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+    height: 180px;
 }
 
-.links {
+.dash__col {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--upos-space-gap-row);
+    min-width: 0;
+}
+
+.dash__col-value {
+    font: 700 12px/1 Archivo, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    color: var(--upos-ink);
+    text-align: center;
+}
+
+/* The track is the full band height so every bar measures from one baseline;
+   the bar's own height is the share, set inline. */
+.dash__col-track {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    min-height: 0;
+}
+
+/* --upos-grad-bar-v: the bar token turned to follow a column that grows upward
+   (§3). The top pair rounds at --upos-radius-inset and the foot sits flush on
+   the baseline, where §7 has no exposed corner to govern.
+
+   §8's fl-grow is a scaleX keyframe. The handbook's own clause turns it rather
+   than replacing it: a column that grows upward runs the same growth on scaleY
+   from transform-origin:bottom at the call site, over fl-grow's .8–.9s on
+   --upos-ease. That is what dash-grow-y is — one keyframe's other axis, declared
+   here because a keyframe cannot be re-axised from a call site. The vocabulary
+   is still the same six.
+
+   min-height keeps a hairline slice visible without drawing it taller than the
+   share it was given; a zero slice renders no bar at all. */
+.dash__col-bar {
+    width: 100%;
+    min-height: 4px;
+    border-radius: var(--upos-radius-inset) var(--upos-radius-inset) 0 0;
+    background: var(--upos-grad-bar-v);
+    transform-origin: bottom;
+    animation: dash-grow-y .85s var(--upos-ease);
+}
+
+@keyframes dash-grow-y {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+}
+
+.dash__axis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+}
+
+.dash__col-label {
+    font: 700 12px/1.35 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+    text-align: center;
+}
+
+/* ─── Top items ─────────────────────────────────────────────────────────── */
+
+.dash__items {
     list-style: none;
-    margin: var(--upos-space-gap-card) 0 0;
+    margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--upos-space-gap-row);
-    max-width: 520px;
+    gap: var(--upos-space-gap-row-loose);
 }
 
-/* A block inside the white panel takes --upos-surface-inset and no shadow
-   (Part II-B preamble); it picks the shadow up when it lifts (§7, §8). */
-.links li {
+.dash__item {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: var(--upos-space-pad-inset);
-    border-radius: var(--upos-radius-inset);
-    background: var(--upos-surface-inset);
-    transition: transform var(--upos-dur-fast) var(--upos-ease),
-                box-shadow var(--upos-dur-fast) var(--upos-ease);
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
 }
 
-.links a {
+.dash__item-name {
     font: var(--upos-type-row);
     letter-spacing: -.01em;
-    color: var(--upos-accent);
-    text-decoration: none;
+    color: var(--upos-ink);
 }
 
-.arrow {
-    margin-left: 4px;
+/* Units then revenue, right-aligned and tabular so the two rows below it line
+   up digit for digit (§6: money on a staff surface is Archivo 800 in a column,
+   and this column is 700 because it is the row's meta line, not its figure). */
+.dash__item-meta {
+    flex: none;
+    font: 700 13px/1.35 Archivo, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    color: var(--upos-ink-subtle);
 }
 
-.meta {
+/* The exception row sits under the list behind the spec's hairline, blocked. */
+.dash__exception {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: var(--upos-space-gap-card);
+    border-top: 1px solid var(--upos-border);
+}
+
+.dash__exception code {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: .92em;
+}
+
+/* §10: an empty state argues a point rather than apologising. */
+.dash__empty {
+    margin: auto 0;
     font: var(--upos-type-body);
     color: var(--upos-ink-subtle);
 }
 
-@media (hover: hover) {
-    .links li:hover {
-        transform: translateY(-3px);
-        box-shadow: var(--upos-shadow-card);
+/* Money is tabular wherever a figure can end up in a column — the KPI values
+   included, which are StatCard's markup and reached with ::deep. */
+.dash ::deep .u-stat-card__value,
+.dash ::deep .u-stat-card__comparison {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────────────────
+   §8: drop fl-sheen entirely, reduce fl-rise to an opacity fade, and a growth
+   that carries no status goes with it. dash-fade is fl-rise's reduced form, not
+   a seventh keyframe. */
+@media (prefers-reduced-motion: reduce) {
+    .dash__ai {
+        animation: dash-fade .6s var(--upos-ease);
+    }
+
+    .dash__ai::after {
+        display: none;
+    }
+
+    .dash__col-bar {
+        animation: none;
+    }
+
+    .dash__ai-toggle {
+        transition: none;
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .links li {
-        transition: none;
+@keyframes dash-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* The panel holds a 1000px minimum (Part II-B preamble); below the shell's own
+   breakpoint the strip and the charts row stack rather than crush. */
+@media (max-width: 1100px) {
+    .dash__strip {
+        grid-template-columns: repeat(2, 1fr);
     }
 
-    .links li:hover {
-        transform: none;
+    .dash__row {
+        grid-template-columns: 1fr;
     }
 }
