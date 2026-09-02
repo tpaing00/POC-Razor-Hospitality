@@ -28,20 +28,26 @@
     container-name: upos-shell;
 }
 
-/* NOT SOLVED, and recorded here rather than papered over. Restaurant.Mobile's
-   WebView fills the whole 1080x2160 panel — 393x785 CSS px, the full screen —
-   so the shell runs under Android's status bar at the top and its gesture bar
-   at the foot: the 26px mark is clipped from above and the lower half of the
-   78px nav sits under the system bar. It predates the handheld step (the wide
-   layout was cut in exactly the same two places) and the step does not cause
-   it, but a 58px top bar under a status bar is tighter than a 76px one.
+/* The shell measures its host, and the host is now the right box. This is where
+   the note used to say it was not: Restaurant.Mobile's WebView filled the whole
+   1080x2160 panel — 393x785 CSS px, the full screen — so the shell ran under
+   Android's status bar at the top and its navigation bar at the foot, with the
+   26px mark clipped from above and the lower half of the 78px nav underneath.
 
-   env(safe-area-inset-*) does not fix it: this WebView reports 0 for all four,
-   because Android exposes cutout insets there and not system-bar insets, and
-   padding by four zeroes would be a rule that looks like a fix and is not. The
-   real fix is host-side — the MAUI page has to consume the window insets — so
-   it belongs to Restaurant.Mobile, not to a stylesheet, and it is left as a
-   named defect rather than half-done in the wrong file. */
+   The cause was in the host and not here. .NET MAUI 10 puts every Android
+   window into edge to edge, on every API level, by calling
+   WindowCompat.SetDecorFitsSystemWindows(window, false) in the activity's
+   OnCreate; the theme's maui_edgetoedge_optout is only read on API 35 and up
+   and this device is API 28. MainActivity now calls the same method with true
+   after base.OnCreate, so the WebView is laid out between the two bars and the
+   shell's 100% is 393x713 — the panel less a 66px status bar and a 132px
+   navigation bar, at 440dpi.
+
+   env(safe-area-inset-*) was never going to reach it: this WebView reports 0
+   for all four, because Android exposes cutout insets there and not system-bar
+   insets, and padding by four zeroes is a rule that looks like a fix and is
+   not. No rule in this file changed, which is the point — the stylesheet was
+   already right about the box it was handed. */
 
 /* The one element in the product that spends --upos-blur-glass (§7). The veil
    is what makes the blur mean anything; the artboard's flat inset fill would
