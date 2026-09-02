@@ -97,6 +97,15 @@
   --upos-space-gap-chip: 7px;
   --upos-space-gap-inline: 10px;
   --upos-space-gap-section: 26px;
+  /* The gap between two lines on a check. It is not one of the vendored steps —
+     the check's list has always stacked at 12px, which is a step above
+     --upos-space-gap-inline and below --upos-space-gap-card and is neither — and
+     the literal was written at the one call site that needed it. It has to be a
+     token now because the handheld sheet sizes its line region from it: three
+     lines and their gaps is a height, and a height built half from a token and
+     half from a literal is a height nobody can re-derive. §12: if the value you
+     need has no token, add the token. */
+  --upos-space-gap-line: 12px;
   --upos-space-pad-panel: 26px 24px 28px;
   --upos-space-pad-hero: 30px 32px 26px;
   --upos-space-pad-card: 24px 26px;

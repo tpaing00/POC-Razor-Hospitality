@@ -149,13 +149,16 @@
     color: var(--upos-ink);
 }
 
+/* The check's lines. --upos-space-gap-line is the 12px the list has always
+   stacked at; it is a token rather than a literal because the handheld sheet
+   sizes its line region from it (see the handheld block). */
 .oe__lines {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--upos-space-gap-line);
     padding: 14px 22px;
 }
 
@@ -326,7 +329,8 @@
    the three panes cannot be drawn: 170px rail + 380px cart + 44px grid padding
    + one 190px tile is 784px before the screen holds an item, and the device
    that prompted this — a Datalogic Memor 20, 1080x2160 at 440dpi — reports a
-   393x785 CSS-pixel portrait viewport.
+   393x713 CSS-pixel portrait viewport once its host stops drawing behind
+   Android's status and navigation bars.
 
    The step measures the shell, not the viewport, so the back office's fixed
    1440x900 preview frame keeps the wide layout however narrow the browser
@@ -450,9 +454,21 @@
 
     /* ─── The check as a sheet ────────────────────────────────────────────
        The .u-drawer recipe with its inset flipped from top/right/bottom to
-       left/right/bottom: full width, max-height 82%, --upos-radius-panel on the
+       left/right/bottom: full width, max-height 90%, --upos-radius-panel on the
        two top corners only, --upos-shadow-modal, fl-rise at --upos-dur-slow.
-       Closed, it is out of the layout and out of the accessibility tree. */
+       Closed, it is out of the layout and out of the accessibility tree.
+
+       The cap is a band and not the drawer recipe's 82%, and it is the second
+       half of the three-lines rule below. The sheet is height:auto between its
+       two insets, so what it asks for is head + line region + footer — 547px on
+       the Memor 20, against a destination of 577px once the host stops drawing
+       under Android's bars. A percentage cap cannot be read against that: 82%
+       is 473px, which is 74px short of the ask, and it was the cap and not the
+       line region that pushed the totals up over the second line. So the cap
+       says what it is actually for. The scrim keeps one --upos-space-gap-section
+       band at the head of the destination and the sheet takes the rest, which
+       is a visible strip of the menu on every host rather than a percentage
+       that has to be re-derived for each one. */
     .oe__cart {
         display: none;
     }
@@ -464,7 +480,7 @@
         right: 0;
         bottom: 0;
         z-index: 2;
-        max-height: 82%;
+        max-height: calc(100% - var(--upos-space-gap-section));
         border-left: none;
         border-top: 1px solid var(--upos-border);
         border-radius: var(--upos-radius-panel) var(--upos-radius-panel) 0 0;
@@ -473,13 +489,62 @@
         animation: fl-rise var(--upos-dur-slow) var(--upos-ease);
     }
 
-    /* The three bands are structurally unchanged and lose only the panel's 22px
-       side padding, which becomes the page step. */
+    /* The three bands are structurally unchanged and lose only the panel's
+       padding: inside the sheet every edge is the page step. The list already
+       stood at 14px top and bottom, so what moves is the panel's 22px sides on
+       all three bands and the header's and footer's 18px top and bottom. It is
+       one rule rather than a side rule and a vertical one because the reason is
+       one reason — a 393px sheet is a page, and a page has a page step — and
+       because those 16px are 16px the check gets to spend on a line. */
     .oe__cart-head,
     .oe__lines,
     .oe__foot {
-        padding-left: var(--upos-space-page);
-        padding-right: var(--upos-space-page);
+        padding: var(--upos-space-page);
+    }
+
+    /* ─── Three lines before the totals ───────────────────────────────────
+       The line region asks for three lines rather than taking what is left
+       over. What is left over is what put the totals across the second line on
+       the device: the sheet's header and its pinned footer are both flex:none,
+       so a flex:1 list gets the remainder of the cap and the remainder was 98px.
+
+       The height is measured, not chosen. A cart line is exactly
+       --upos-touch-terminal tall — CartLine has no height of its own, and the
+       QtyStepper's two buttons inside it carry the touch floor, which is what
+       sets the line's 48px. The list stacks them at --upos-space-gap-line. So
+       three lines is three touch floors and their two gaps, and the third gap is
+       one more: it puts the top edge of the gap before the fourth line inside
+       the region, which is what makes a full list read as scrollable rather than
+       as finished. The list's own 14px band above and below sits outside this,
+       because the box is content-box.
+
+       flex-basis and not min-height. A floor would clip the footer off the
+       bottom of the sheet on any host too short to hold header + three lines +
+       footer; a basis is a request that shrinks last, so on such a host the
+       region gives way and the totals, SEND ALL and Charge stay whole. On the
+       Memor 20 nothing shrinks: the sheet asks for 547px — 109px of header,
+       208px here, 230px of footer — against a 577px destination and a cap that
+       allows 551px.
+
+       It is a floor as well as a ceiling on purpose. With one line on the check
+       the region still stands three lines tall, so the sheet does not grow under
+       the thumb as the second and third items are tapped in. A sheet that
+       resizes on every tap is a sheet whose Charge button moves. */
+    .oe__lines {
+        flex: 1 1 calc(var(--upos-touch-terminal) * 3 + var(--upos-space-gap-line) * 3);
+    }
+
+    /* The footer's tax-and-tender paragraph folds here, and only here. It is the
+       one thing in the sheet's pinned footer that is not the check, and on a
+       393px sheet it is 72px — more than a line and a half of the check it is
+       annotating. Nothing it names goes unsaid at this width: the Tax row still
+       reads NO TAX RULE · GAP-08 in position and the Charge block still reads
+       PAYMENT SCREEN AND PAYMENTS DOMAIN · GAP-08 under it, which are the same
+       two facts in the two places a reader meets them. GAP-13 is the one thing
+       the fold costs, and it is stated in full in the 1440 panel, which is the
+       primary design. */
+    .oe__foot .oe__gap-line {
+        display: none;
     }
 
     /* The sheet's header wraps to two rows at this width, and the order is set
