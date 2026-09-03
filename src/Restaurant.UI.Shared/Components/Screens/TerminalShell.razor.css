@@ -1,0 +1,296 @@
+/* Part II-A · the terminal shell. --upos-radius-panel 26px on --upos-surface,
+   clipped, a fixed 76px top bar and a fixed 78px bottom nav with the destination
+   between them. Every value is a token or a Part II-A literal (§12 records that
+   the chrome dimensions — 76px, 78px — are literals the kit does not tokenize).
+   No :hover rule in this file: the terminal has no hover (§8). */
+
+.shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: var(--upos-radius-panel);
+    background: var(--upos-surface);
+    color: var(--upos-ink);
+
+    /* Part II-A · Handheld. The shell is the container the handheld step
+       measures, and it is named so the destination inside it can ask about the
+       shell's width from its own scope. A container query rather than a media
+       query because the shell is what the panes have to fit inside and the
+       viewport is only sometimes the same box: on the device they are
+       identical, in the back office's fixed preview frame they are not, and a
+       viewport rule would flip a 1440px frame the moment the browser window
+       narrowed. Where the container query is unsupported nothing matches and
+       the 1440x900 layout stands, which is the behaviour before this rule. */
+    container-type: inline-size;
+    container-name: upos-shell;
+}
+
+/* The shell measures its host, and the host is now the whole screen.
+
+   That has been true twice, for opposite reasons, and the sequence matters
+   because two of the three numbers were right about a terminal this one is not.
+   Restaurant.Mobile's WebView first filled the whole 1080x2160 panel — 393x785
+   CSS px — while Android still drew both bars over it, so the shell ran under
+   the status bar at the top and the navigation bar at the foot, the 26px mark
+   clipped from above and the lower half of the 78px nav underneath. That 785
+   was a defect: the shell was measuring 72px of chrome it did not own.
+   MainActivity answered it with WindowCompat.SetDecorFitsSystemWindows(window,
+   true), the WebView was laid out between the bars, and the shell's 100% became
+   393x713.
+
+   It is 393x785 again now, and this one is the device. MainActivity hides both
+   system bars — sticky immersive through WindowInsetsControllerCompat — because
+   the navigation bar's back and home controls are a way out of the app, and a
+   terminal a member of staff can leave mid-order is a terminal that loses a
+   check. The inset fix is not so much reverted as made unnecessary: it existed
+   to stop the shell being laid out under two bars that were taking screen, and
+   there are no longer two bars taking screen.
+
+   A transient bar, swiped in from an edge, does not reach this file. Sticky
+   immersive dispatches no new window insets for a bar that is about to leave,
+   so nothing re-lays-out: the shell keeps its box, the bar floats over it and
+   retreats. Momentarily covered is not clipped.
+
+   env(safe-area-inset-*) was never going to reach any of it either: this
+   WebView reports 0 for all four, because Android exposes cutout insets there
+   and not system-bar insets, and padding by four zeroes is a rule that looks
+   like a fix and is not. No rule in this file has changed across either
+   chapter, which is the point — the stylesheet was always right about the box
+   it was handed. */
+
+/* The one element in the product that spends --upos-blur-glass (§7). The veil
+   is what makes the blur mean anything; the artboard's flat inset fill would
+   render the blur invisible. */
+.shell__top {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-card);
+    height: 76px;
+    padding: 0 28px;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--upos-border);
+    background: var(--upos-surface-veil);
+    backdrop-filter: blur(var(--upos-blur-glass));
+    -webkit-backdrop-filter: blur(var(--upos-blur-glass));
+}
+
+.shell__identity {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-inline);
+    min-width: 0;
+}
+
+.shell__mark {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-grad-primary);
+    box-shadow: var(--upos-shadow-button);
+}
+
+.shell__venue {
+    font: 800 15px/1.2 Archivo, system-ui, sans-serif;
+    letter-spacing: -.01em;
+    color: var(--upos-ink);
+    white-space: nowrap;
+}
+
+.shell__status {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-inline);
+    font: 700 13px/1 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+/* The clock is a figure read digit by digit, so it is mono (§6). */
+.shell__clock {
+    font: var(--upos-type-mono);
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── Instrument cluster ─────────────────────────────────────────────────────
+   Connectivity and battery, between the server name and the clock. Part II-A ·
+   Order entry · Layout: the terminal hides Android's status bar, that bar
+   carried the clock, the signal and the battery, and the clock was already
+   here. So these two are the bar's own replacement for it, and on the handheld
+   — where the server name drops — the right of the bar is exactly the status
+   bar's three. */
+.shell__instruments {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--upos-space-gap-inline);
+    min-width: 0;
+}
+
+/* Both instruments take the bar's own ink, which .shell__status already sets;
+   they carry no color of their own until something is wrong. An icon takes the
+   ink of its parent (§9), so the state rules below only have to move one
+   property. */
+.shell__signal {
+    display: inline-flex;
+    align-items: center;
+}
+
+.shell__signal--off {
+    color: var(--upos-status-late-text);
+}
+
+.shell__battery {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--upos-space-gap-chip);
+}
+
+/* At or below 20% the battery goes red — §4, red marks a problem that exists,
+   and a terminal about to die mid-service is one. The threshold is a policy
+   literal recorded in Part II-A, not a token: it is a value a condition tests
+   rather than a value a declaration takes, which is the same reason the
+   handheld step's 800 stays a literal (§12). */
+.shell__battery--low {
+    color: var(--upos-status-late-text);
+}
+
+/* A charge is a figure read as a figure, so it is mono — the clock's own
+   reasoning, eight pixels away (§6). */
+.shell__battery-level {
+    font: var(--upos-type-mono);
+}
+
+/* §11's offline pill, on the kit's .u-pill-offline. It carries the word and no
+   count: the connection is observed and the queue is not, so the count would be
+   a claim nothing stands behind (§11, GAP-10). The mark is §11's 13px wifi-off
+   icon; it is what the handheld drops, because the cluster's own connectivity
+   glyph is on the same bar saying the same thing. */
+.shell__offline {
+    flex: none;
+}
+
+.shell__offline-mark {
+    display: inline-flex;
+    align-items: center;
+}
+
+.shell__offline-mark svg {
+    width: 13px;
+    height: 13px;
+}
+
+/* A slot whose data does not exist yet: quiet, on the inset, naming its gap,
+   never an error treatment. The Menu manager's blocked-control pattern. */
+.shell__blocked {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--upos-space-pad-chip);
+    border-radius: var(--upos-radius-pill);
+    background: var(--upos-surface-inset);
+    color: var(--upos-ink-subtle);
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    cursor: default;
+}
+
+/* The narrow label is out of the way at every width above the step. */
+.shell__blocked-narrow {
+    display: none;
+}
+
+.shell__body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+/* The destination fills the space between the bars and does its own scrolling.
+   ::deep because the destination arrives as ChildContent and carries its own
+   scope, not this component's. */
+.shell__body ::deep > * {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+}
+
+/* ─── Handheld ───────────────────────────────────────────────────────────────
+   Part II-A · Order entry · Handheld, provisional. One step at 800px of shell
+   width — 170px rail + 380px cart + 44px grid padding + one 190px tile = 784px
+   before the screen holds an item, rounded up. The 800 stays a literal: a
+   custom property cannot be read inside a container condition, so a token for
+   it would be a token nothing could spend (§12).
+
+   The shell's own share of the rule is the top bar. The bottom nav takes its
+   own rule, and it takes it in BottomNav.razor.css where the strip is drawn —
+   the labels lay out away and the icon steps 17px -> 20px. The note that used
+   to stand here said the nav needed no rule because five items into 393px is
+   72px each; that divided the strip as though flex:1 could shrink an item to
+   any width, which it cannot. The measurement and the three treatments weighed
+   against it are in BottomNav.razor.css and in the handbook. */
+
+@container upos-shell (max-width: 800px) {
+
+    /* 76px -> 58px, and the page step for side padding. The glass treatment is
+       unchanged: this is still the one element that spends --upos-blur-glass. */
+    .shell__top {
+        height: 58px;
+        padding: 0 var(--upos-space-page);
+        gap: var(--upos-space-gap-inline);
+    }
+
+    /* The venue and terminal id drop a role and truncate from the terminal id
+       rather than pushing the clock off the bar. */
+    .shell__venue {
+        font: 700 13px/1.2 Archivo, system-ui, sans-serif;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Every blocked chip that survives here takes its short label. */
+    .shell__blocked-wide {
+        display: none;
+    }
+
+    .shell__blocked-narrow {
+        display: inline;
+    }
+
+    /* The server name drops. Of the right-hand items it is the one whose reader
+       already knows the answer — the person holding the device is the server.
+       The clock stays because a check is a thing that gets stamped, and the
+       instrument cluster stays because this is the terminal it was added for. */
+    .shell__blocked--server {
+        display: none;
+    }
+
+    /* The bar is full at 393px, and two things give way when the terminal is
+       offline. Measured into 365px of content: the mark and its gap take 36px,
+       the instrument cluster and the clock take 123px with their gaps, and an
+       offline pill with its wifi-off icon takes 95px more — leaving the venue
+       and terminal id 18px, which is not a truncation, it is a deletion. Both
+       rules below drop the redundant half of a pair rather than shrinking
+       anything.
+
+       The queue chip goes. §11's pill stays — a handheld carried away from the
+       counter is the likeliest thing in the venue to lose the network — but of
+       the two, the red pill states the terminal's condition and the grey chip
+       names a gap in the model, and on 393px of glass the condition wins. This
+       is the move the check sheet's footer already makes with GAP-13 one screen
+       over: the gap stands in full in the 1440 design, which is the primary
+       one. */
+    .shell__blocked--queue {
+        display: none;
+    }
+
+    /* The pill drops its mark and keeps its word. The cluster's connectivity
+       glyph is on the same bar, ten pixels away, saying the same thing in the
+       same drawing, and OFFLINE is not ambiguous without a picture of it. */
+    .shell__offline-mark {
+        display: none;
+    }
+}

@@ -1,0 +1,579 @@
+@page "/kit"
+@rendermode InteractiveServer
+@using Restaurant.Shared.Models
+@using Restaurant.Shared.Models.Dtos
+
+@* DEVELOPMENT AID — not a product screen and not in the nav.
+   The Blazor equivalent of docs/design/tokens/preview.html: every component in
+   the shared library, in every state Part III names, each one labelled. Load it
+   beside preview.html and the two must look the same; flip the theme and the
+   accent in the rail and both must hold. It ships behind /kit and nothing
+   links to it. *@
+
+<PageTitle>Component kit</PageTitle>
+
+<div class="panel kit">
+
+    <header class="kit__head">
+        <h1 class="kit__title">UPOS component kit</h1>
+        <p class="kit__lede">
+            Every component in <code>Restaurant.UI.Shared</code>, in every state Part III of the
+            design handbook names. Compare against <code>docs/design/tokens/preview.html</code>.
+            Flip the theme and the accent from the rail; nothing here hard-codes a color.
+        </p>
+    </header>
+
+    @* ─── UposButton ─────────────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">UposButton</h2>
+        <p class="kit__note">Variant · Label · Icon · MinHeight · Disabled · OnClick</p>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">Primary</span>
+                <UposButton Variant="ButtonVariant.Primary" Label="Charge $18.40" OnClick="Noop" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Secondary</span>
+                <UposButton Variant="ButtonVariant.Secondary" Label="Save order" OnClick="Noop" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Ghost</span>
+                <UposButton Variant="ButtonVariant.Ghost" Label="Cancel" OnClick="Noop" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Ghost · destructive (§11 ink label)</span>
+                <UposButton Variant="ButtonVariant.Ghost" Label="Void item"
+                            style="color:var(--upos-ink)" OnClick="Noop" />
+            </div>
+        </div>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">Primary · disabled</span>
+                <UposButton Variant="ButtonVariant.Primary" Label="Charge $18.40" Disabled="true" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Secondary · disabled</span>
+                <UposButton Variant="ButtonVariant.Secondary" Label="Save order" Disabled="true" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Ghost · disabled</span>
+                <UposButton Variant="ButtonVariant.Ghost" Label="Cancel" Disabled="true" />
+            </div>
+        </div>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">Confirmed label · inline SVG check (§9)</span>
+                <UposButton Variant="ButtonVariant.Primary" Label="Sent to kitchen" OnClick="Noop">
+                    <Icon>
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                    </Icon>
+                </UposButton>
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">MinHeight 60 · kiosk target</span>
+                <UposButton Variant="ButtonVariant.Primary" Label="Add to order" MinHeight="60" OnClick="Noop" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Splatted title + data-*</span>
+                <UposButton Variant="ButtonVariant.Secondary" Label="Splat check"
+                            title="Extra attributes land on the button"
+                            data-kit="splat" OnClick="Noop" />
+            </div>
+        </div>
+        <p class="kit__note">Last press: <strong>@_lastPress</strong></p>
+    </section>
+
+    @* ─── UposIconButton ─────────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">UposIconButton</h2>
+        <p class="kit__note">Icon · Label · HitArea · OnClick — the glyph is 34px everywhere; only the hit area moves</p>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">HitArea 34 · back office</span>
+                <UposIconButton Label="Settings" HitArea="34" OnClick="Noop">
+                    <Icon>@GearIcon</Icon>
+                </UposIconButton>
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">HitArea 48 · terminal (§11)</span>
+                <UposIconButton Label="Send this item" HitArea="48" OnClick="Noop">
+                    <Icon>@PlaneIcon</Icon>
+                </UposIconButton>
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Disabled</span>
+                <UposIconButton Label="Settings" Disabled="true">
+                    <Icon>@GearIcon</Icon>
+                </UposIconButton>
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Inside .u-modal · rotates, does not lift</span>
+                <div class="u-modal kit__modalstub">
+                    <UposIconButton Label="Close" OnClick="Noop">
+                        <Icon>@CloseIcon</Icon>
+                    </UposIconButton>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @* ─── StatusChip ─────────────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">StatusChip</h2>
+        <p class="kit__note">Status · Tone · Label · Elapsed · LateAfter — late is derived, never stored (§4)</p>
+
+        <div class="kit__row">
+            @foreach (var status in AllStatuses)
+            {
+                <div class="kit__cell">
+                    <span class="kit__lab">Status = @status</span>
+                    <StatusChip Status="status" />
+                </div>
+            }
+        </div>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">Tone = New (no order behind it)</span>
+                <StatusChip Tone="StatusTone.New" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Tone = Fired</span>
+                <StatusChip Tone="StatusTone.Fired" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Tone = Ready</span>
+                <StatusChip Tone="StatusTone.Ready" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Tone = Late + Label — the 86'd menu-item state</span>
+                <StatusChip Tone="StatusTone.Late" Label="86'D" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Label override · COURSE 1 · FIRED</span>
+                <StatusChip Tone="StatusTone.Fired" Label="Course 1 · Fired" />
+            </div>
+        </div>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">Preparing · Elapsed 4m, LateAfter 12m — inside SLA</span>
+                <StatusChip Status="OrderStatus.Preparing"
+                            Elapsed="TimeSpan.FromMinutes(4)"
+                            LateAfter="TimeSpan.FromMinutes(12)" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Preparing · Elapsed 19m, LateAfter 12m — derived late, red overrides orange</span>
+                <StatusChip Status="OrderStatus.Preparing"
+                            Elapsed="TimeSpan.FromMinutes(19)"
+                            LateAfter="TimeSpan.FromMinutes(12)" />
+            </div>
+        </div>
+    </section>
+
+    @* ─── OrderStatusBadge ───────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">OrderStatusBadge</h2>
+        <p class="kit__note">Status — the one-parameter wrapper over StatusChip that Orders.razor still calls</p>
+        <div class="kit__row">
+            @foreach (var status in AllStatuses)
+            {
+                <div class="kit__cell">
+                    <span class="kit__lab">@status</span>
+                    <OrderStatusBadge Status="status" />
+                </div>
+            }
+        </div>
+    </section>
+
+    @* ─── AllergenChip ───────────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">AllergenChip</h2>
+        <p class="kit__note">Allergen · OnDark · Interactive · IsOn · OnToggle — violet means allergen and nothing else (§5). No field backs it (GAP-05)</p>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">On light</span>
+                <AllergenChip Allergen="Gluten" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Interactive · on</span>
+                <AllergenChip Allergen="Dairy" Interactive="true" IsOn="@_dairyOn" OnToggle="ToggleDairy" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Interactive · toggled off</span>
+                <AllergenChip Allergen="Nuts" Interactive="true" IsOn="false" OnToggle="Noop2" />
+            </div>
+        </div>
+
+        <div class="kit__row kit__row--dark">
+            <div class="kit__cell">
+                <span class="kit__lab kit__lab--dark">OnDark — inverted pairing (§5)</span>
+                <AllergenChip Allergen="Shellfish" OnDark="true" />
+            </div>
+        </div>
+    </section>
+
+    @* ─── Pill ───────────────────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">Pill</h2>
+        <p class="kit__note">Label · Leading · Selected · Bordered · OnClick — the neutral tag; a status word is a StatusChip and an allergen is an AllergenChip</p>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">Static tag (no handler)</span>
+                <Pill Label="Lunch menu" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Leading dot</span>
+                <Pill Label="Mains">
+                    <Leading>
+                        <span class="kit__dot"></span>
+                    </Leading>
+                </Pill>
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Selectable · not selected</span>
+                <Pill Label="Item info" Selected="@(_pill == "Item info")" OnClick="@(() => SelectPill("Item info"))" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Selectable · selected</span>
+                <Pill Label="Plating" Selected="@(_pill == "Plating")" OnClick="@(() => SelectPill("Plating"))" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Bordered-quiet</span>
+                <Pill Label="View plating" Bordered="true" OnClick="Noop" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Tappable · MinHeight 48 (§11)</span>
+                <Pill Label="Re-fire" Bordered="true" MinHeight="48" OnClick="Noop" />
+            </div>
+        </div>
+        <p class="kit__note">Selected pill: <strong>@(_pill ?? "none")</strong></p>
+    </section>
+
+    @* ─── SegmentedControl ───────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">SegmentedControl</h2>
+        <p class="kit__note">Options · Selected · OnSelect · MinHeight — exactly one active; inactive options are --upos-ink at .66, not --upos-ink-subtle</p>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">Back office · bare recipe</span>
+                <SegmentedControl Options="ViewOptions" Selected="@_view" OnSelect="SetView" Label="Menu view" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Terminal · MinHeight 48</span>
+                <SegmentedControl Options="FireOptions" Selected="@_fire" OnSelect="SetFire"
+                                  MinHeight="48" Label="Fire timing" />
+            </div>
+        </div>
+        <p class="kit__note">View: <strong>@_view</strong> · Fire: <strong>@_fire</strong></p>
+    </section>
+
+    @* ─── UposSwitch ─────────────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">UposSwitch</h2>
+        <p class="kit__note">Checked · CheckedChanged · Label · Disabled — role="switch" with aria-checked; the fill swaps rather than fading</p>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">On (bound)</span>
+                <UposSwitch @bind-Checked="_uberOn" Label="Uber Eats connected" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Off (bound)</span>
+                <UposSwitch @bind-Checked="_skipOn" Label="SkipTheDishes connected" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Disabled</span>
+                <UposSwitch Checked="true" Disabled="true" Label="Locked channel" />
+            </div>
+        </div>
+        <p class="kit__note">Uber Eats: <strong>@(_uberOn ? "on" : "off")</strong> · SkipTheDishes: <strong>@(_skipOn ? "on" : "off")</strong></p>
+    </section>
+
+    @* ─── StatCard ───────────────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">StatCard</h2>
+        <p class="kit__note">Label · Value · Comparison · ComparisonTone · Fill — the comparison line is the only colored thing on the card (§4)</p>
+
+        <div class="kit__row kit__row--ground">
+            <div class="kit__cell">
+                <span class="kit__lab">Fill = Ground · beats comparison</span>
+                <StatCard Label="Net sales" Value="$4,820" ComparisonTone="StatusTone.Ready">
+                    <Comparison>
+                        @UpArrow <span>12.4% vs. last Tuesday</span>
+                    </Comparison>
+                </StatCard>
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Fill = Ground · misses target</span>
+                <StatCard Label="Average ticket" Value="$38.10" ComparisonTone="StatusTone.Fired">
+                    <Comparison>
+                        @DownArrow <span>4.1% under target</span>
+                    </Comparison>
+                </StatCard>
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Neither · --upos-ink-subtle</span>
+                <StatCard Label="Covers" Value="184">
+                    <Comparison>
+                        <span>Flat on last week</span>
+                    </Comparison>
+                </StatCard>
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">No comparison</span>
+                <StatCard Label="Open checks" Value="7" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">The empty day</span>
+                <StatCard Label="Net sales" Value="$0" />
+            </div>
+        </div>
+
+        <div class="kit__row">
+            <div class="kit__cell">
+                <span class="kit__lab">Fill = Panel — inset, no shadow (Part II-B)</span>
+                <StatCard Label="Net sales" Value="$4,820" Fill="SurfaceFill.Panel"
+                          ComparisonTone="StatusTone.Ready">
+                    <Comparison>
+                        @UpArrow <span>12.4% vs. last Tuesday</span>
+                    </Comparison>
+                </StatCard>
+            </div>
+        </div>
+    </section>
+
+    @* ─── DataRow ────────────────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">DataRow</h2>
+        <p class="kit__note">Leading · ChildContent · Trailing · BorderTone · Selected · OnClick — the kit's one borders-as-elevation exception (§7)</p>
+
+        <div class="kit__stack">
+            <div class="kit__cell">
+                <span class="kit__lab">Rest · no handler, non-interactive</span>
+                <DataRow>
+                    <ChildContent>
+                        <strong>#128 · Classic Cheeseburger</strong>
+                    </ChildContent>
+                </DataRow>
+            </div>
+
+            <div class="kit__cell">
+                <span class="kit__lab">Leading + trailing, BorderTone = New</span>
+                <DataRow BorderTone="StatusTone.New">
+                    <Leading><span class="u-badge-channel">Dine-in</span></Leading>
+                    <ChildContent>
+                        <strong>Counter · #482</strong>
+                        <span class="kit__sub">2 × Classic Cheeseburger, 1 × Caesar Salad</span>
+                    </ChildContent>
+                    <Trailing>
+                        <span class="kit__mono">$46.20</span>
+                        <StatusChip Status="OrderStatus.Confirmed" />
+                    </Trailing>
+                </DataRow>
+            </div>
+
+            <div class="kit__cell">
+                <span class="kit__lab">BorderTone = Fired</span>
+                <DataRow BorderTone="StatusTone.Fired">
+                    <Leading><span class="u-badge-channel">DoorDash</span></Leading>
+                    <ChildContent><strong>Delivery · #483</strong></ChildContent>
+                    <Trailing><StatusChip Status="OrderStatus.Preparing" /></Trailing>
+                </DataRow>
+            </div>
+
+            <div class="kit__cell">
+                <span class="kit__lab">BorderTone = Ready</span>
+                <DataRow BorderTone="StatusTone.Ready">
+                    <Leading><span class="u-badge-channel">Online</span></Leading>
+                    <ChildContent><strong>Pickup · #484</strong></ChildContent>
+                    <Trailing><StatusChip Status="OrderStatus.Ready" /></Trailing>
+                </DataRow>
+            </div>
+
+            <div class="kit__cell">
+                <span class="kit__lab">
+                    Derived late — CreatedAt @LateOrderAge.TotalMinutes.ToString("0")m against a 12m SLA;
+                    the tone comes from StatusMap.IsLate, not from a field
+                </span>
+                <DataRow BorderTone="@(StatusMap.IsLate(LateOrderAge, TimeSpan.FromMinutes(12)) ? StatusTone.Late : StatusMap.ToneFor(OrderStatus.Preparing))">
+                    <Leading><span class="u-badge-channel">Dine-in</span></Leading>
+                    <ChildContent>
+                        <strong>Table 6 · #485</strong>
+                        <span class="kit__sub">Running late</span>
+                    </ChildContent>
+                    <Trailing>
+                        <StatusChip Status="OrderStatus.Preparing"
+                                    Elapsed="LateOrderAge"
+                                    LateAfter="TimeSpan.FromMinutes(12)" />
+                    </Trailing>
+                </DataRow>
+            </div>
+
+            <div class="kit__cell">
+                <span class="kit__lab">Interactive + selected (a list driving a detail pane)</span>
+                <DataRow OnClick="@(() => SelectRow(1))" Selected="@(_row == 1)">
+                    <ChildContent><strong>Classic Cheeseburger</strong></ChildContent>
+                    <Trailing><span class="kit__mono">$14.99</span></Trailing>
+                </DataRow>
+                <DataRow OnClick="@(() => SelectRow(2))" Selected="@(_row == 2)">
+                    <ChildContent><strong>Caesar Salad</strong></ChildContent>
+                    <Trailing><span class="kit__mono">$9.99</span></Trailing>
+                </DataRow>
+            </div>
+        </div>
+        <p class="kit__note">Selected row: <strong>@(_row?.ToString() ?? "none")</strong></p>
+    </section>
+
+    @* ─── MenuItemCard ───────────────────────────────────────────────────── *@
+    <section class="kit__section">
+        <h2 class="kit__h">MenuItemCard</h2>
+        <p class="kit__note">Item · Layout · Scale · Tag · OnTap — 86'd is opacity .5, the name struck, the price replaced by the red pill, and no response to a tap (§4)</p>
+
+        <div class="kit__row kit__row--ground kit__row--cards">
+            <div class="kit__cell">
+                <span class="kit__lab">GridCard · available · tappable</span>
+                <MenuItemCard Item="Burger" Layout="CardLayout.GridCard" OnTap="Tap" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">GridCard · 86'd · no tap</span>
+                <MenuItemCard Item="Eightysixed" Layout="CardLayout.GridCard" OnTap="Tap" />
+            </div>
+            <div class="kit__cell">
+                <span class="kit__lab">Tile</span>
+                <MenuItemCard Item="Salad" Layout="CardLayout.Tile" OnTap="Tap" />
+            </div>
+        </div>
+
+        <div class="kit__stack">
+            <div class="kit__cell">
+                <span class="kit__lab">ListRow · available and 86'd</span>
+                <MenuItemCard Item="Burger" Layout="CardLayout.ListRow" OnTap="Tap" />
+                <MenuItemCard Item="Eightysixed" Layout="CardLayout.ListRow" OnTap="Tap" />
+            </div>
+        </div>
+
+        <div class="kit__row kit__row--ground">
+            <div class="kit__cell">
+                <span class="kit__lab">Scale = Kiosk (×1.4, --upos-touch-kiosk) with a merchandising Tag</span>
+                <MenuItemCard Item="Burger" Layout="CardLayout.GridCard" Scale="TypeScale.Kiosk"
+                              Tag="Popular" OnTap="Tap" />
+            </div>
+        </div>
+        <p class="kit__note">Last tap: <strong>@(_tapped ?? "none")</strong></p>
+    </section>
+
+</div>
+
+@code {
+    // ── Development-aid state. Nothing here is product data. ──────────────
+    private static readonly OrderStatus[] AllStatuses = Enum.GetValues<OrderStatus>();
+
+    private static readonly IReadOnlyList<string> ViewOptions = new[] { "Grid", "List" };
+    private static readonly IReadOnlyList<string> FireOptions = new[] { "Now", "+5m", "+10m" };
+
+    private string _view = "Grid";
+    private string _fire = "Now";
+    private string? _pill;
+    private int? _row;
+    private bool _uberOn = true;
+    private bool _skipOn;
+    private bool _dairyOn = true;
+    private string _lastPress = "none";
+    private string? _tapped;
+
+    // Late is derived from a timestamp and a threshold on every render (§4).
+    // Nothing is stored, and no endpoint returns it.
+    private DateTime _lateSince = DateTime.UtcNow.AddMinutes(-19);
+    private TimeSpan LateOrderAge => DateTime.UtcNow - _lateSince;
+
+    private static readonly MenuItemDto Burger = new()
+    {
+        Id = 1,
+        Name = "Classic Cheeseburger",
+        Description = "Beef patty, cheddar, lettuce, tomato, house sauce",
+        Price = 14.99m,
+        Category = "Main Course",
+        IsAvailable = true
+    };
+
+    private static readonly MenuItemDto Salad = new()
+    {
+        Id = 2,
+        Name = "Caesar Salad",
+        Description = "Romaine, parmesan, croutons, Caesar dressing",
+        Price = 9.99m,
+        Category = "Salad",
+        IsAvailable = true
+    };
+
+    private static readonly MenuItemDto Eightysixed = new()
+    {
+        Id = 3,
+        Name = "Grilled Salmon",
+        Description = "Atlantic salmon, seasonal vegetables, lemon butter",
+        Price = 22.50m,
+        Category = "Main Course",
+        IsAvailable = false
+    };
+
+    private void Noop() => _lastPress = DateTime.Now.ToString("HH:mm:ss");
+
+    private void Noop2(string _) { }
+
+    private void SelectPill(string label) => _pill = _pill == label ? null : label;
+
+    private void SelectRow(int id) => _row = id;
+
+    private void SetView(string option) => _view = option;
+
+    private void SetFire(string option) => _fire = option;
+
+    private void ToggleDairy(string _) => _dairyOn = !_dairyOn;
+
+    private void Tap(MenuItemDto item) => _tapped = item.Name;
+
+    // Icons are inline SVG at stroke-width 2 (§9). Never a glyph character.
+    private static readonly RenderFragment GearIcon = @<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                            stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.18V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 7.26 19.4l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3 12.6H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 7.26l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 3.09V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 2.74 1.51l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.91 11H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>;
+
+    private static readonly RenderFragment PlaneIcon = @<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                                                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                             stroke-linejoin="round" aria-hidden="true">
+        <path d="m22 2-7 20-4-9-9-4Z" />
+        <path d="M22 2 11 13" />
+    </svg>;
+
+    private static readonly RenderFragment CloseIcon = @<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                                                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                             stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 6 6 18M6 6l12 12" />
+    </svg>;
+
+    // §9 permits no arrow character, so the dashboard's comparison arrow is drawn.
+    private static readonly RenderFragment UpArrow = @<svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+                                                           stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+                                                           stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 19V5M5 12l7-7 7 7" />
+    </svg>;
+
+    private static readonly RenderFragment DownArrow = @<svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+                                                             stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+                                                             stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14M5 12l7 7 7-7" />
+    </svg>;
+}

@@ -3,4 +3,13 @@
 	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true"></application>
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.INTERNET" />
+	<!-- The terminal hides Android's status bar, so its top bar carries the battery
+	     level itself (handbook Part II-A · Handheld, "The host's system bars").
+	     MAUI's Battery API calls Permissions.EnsureDeclared<Permissions.Battery>()
+	     before it will answer, and that check reads the manifest: without this line
+	     ChargeLevel throws and the shell correctly draws no reading at all. The
+	     permission is never granted at runtime — BATTERY_STATS is signature-level and
+	     no ordinary app holds it — and it does not need to be. Declaring it is what
+	     the API asks for. -->
+	<uses-permission android:name="android.permission.BATTERY_STATS" />
 </manifest>

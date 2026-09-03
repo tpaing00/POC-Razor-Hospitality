@@ -1,0 +1,602 @@
+/* Part II-A · Order entry. Three bands between the shell's two bars: a 170px
+   category rail on the inset behind a right hairline, the item grid taking the
+   middle with its own scroll, and a 380px cart panel on the inset behind a left
+   hairline. Every value is a token or a Part II-A literal. No :hover rule in
+   this file — the terminal has no hover, and press feedback is the ripple tint
+   with no transform (§8). */
+
+.oe {
+    display: grid;
+    grid-template-columns: 170px minmax(0, 1fr) 380px;
+    min-height: 0;
+    height: 100%;
+    /* The handheld sheet and its scrim are positioned against this box, so they
+       cover the destination and never the shell's bottom nav. It changes
+       nothing above the step: a position:relative grid lays out identically. */
+    position: relative;
+}
+
+/* Three elements exist at every width and are only ever visible below the
+   handheld step: the summary bar, the scrim under the sheet, and the sheet's
+   close control. They are hidden here rather than conditioned in C#, because
+   the shell's width is not something this component is allowed to know
+   (Part III's "no component takes a touch flag", one step over). */
+.oe__summary,
+.oe__scrim,
+.oe__sheet-close {
+    display: none;
+}
+
+/* ─── Category rail ──────────────────────────────────────────────────────── */
+
+.oe__rail {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 10px;
+    overflow-y: auto;
+    border-right: 1px solid var(--upos-border);
+    background: var(--upos-surface-inset);
+}
+
+.oe__cat {
+    min-height: var(--upos-touch-terminal);
+    padding: 0 14px;
+    border: none;
+    border-radius: var(--upos-radius-inset);
+    background: transparent;
+    color: var(--upos-ink);
+    font: 700 13px/1.35 Archivo, system-ui, sans-serif;
+    letter-spacing: -.01em;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: var(--upos-press-tint);
+    transition: background var(--upos-dur-fast) var(--upos-ease);
+}
+
+.oe__cat:active {
+    background: var(--upos-press-tint);
+}
+
+.oe__cat.is-selected,
+.oe__cat.is-selected:active {
+    background: var(--upos-grad-primary);
+    color: var(--upos-kds-ink);
+}
+
+.oe__rail-empty {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── Item grid ──────────────────────────────────────────────────────────── */
+
+.oe__menu {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--upos-surface);
+}
+
+.oe__menu-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--upos-space-gap-card);
+    padding: 14px 22px 0;
+}
+
+.oe__notice {
+    flex: 1;
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.oe__grid-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 22px;
+}
+
+.oe__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: var(--upos-space-gap-card);
+}
+
+.oe__empty {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── Cart panel ─────────────────────────────────────────────────────────── */
+
+.oe__cart {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-left: 1px solid var(--upos-border);
+    background: var(--upos-surface-inset);
+}
+
+.oe__cart-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--upos-border);
+}
+
+.oe__check {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+}
+
+.oe__check-label {
+    font: 800 14px/1.25 Archivo, system-ui, sans-serif;
+    letter-spacing: -.01em;
+    color: var(--upos-ink);
+}
+
+/* The check's lines. --upos-space-gap-line is the 12px the list has always
+   stacked at; it is a token rather than a literal because the handheld sheet
+   sizes its line region from it (see the handheld block). */
+.oe__lines {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-line);
+    padding: 14px 22px;
+}
+
+.oe__cart-empty {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.oe__foot {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+    padding: 18px 22px;
+    border-top: 1px solid var(--upos-border);
+}
+
+.oe__money {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    font: 700 13px/1.35 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+/* Money on a staff surface is Archivo 800, right-aligned so the decimals line
+   up — the tie-break §6 settles in money's favour. */
+.oe__money-value {
+    font-weight: 800;
+    color: var(--upos-ink);
+}
+
+.oe__money--blocked .oe__money-value {
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.oe__total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    padding-top: 4px;
+}
+
+.oe__total-label {
+    font: 700 13px/1.35 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink);
+}
+
+.oe__total-value {
+    font: 800 20px/1.1 Archivo, system-ui, sans-serif;
+    letter-spacing: -.02em;
+    color: var(--upos-ink);
+}
+
+/* The Charge action, rendered in position and inert. Quiet on the inset rather
+   than a disabled primary: a control that looks live and refuses a tap teaches
+   the wrong thing about the screen. It keeps the primary's 58px so the footer
+   stands as designed. */
+.oe__charge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 58px;
+    padding: 8px 16px;
+    box-sizing: border-box;
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+    border: 1px dashed var(--upos-border);
+    cursor: default;
+}
+
+.oe__charge-label {
+    font: 800 15px/1 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.oe__charge-note {
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── Blocked treatment ──────────────────────────────────────────────────────
+   The Menu manager's, unchanged: quiet, on the inset, behind a dashed hairline,
+   in --upos-ink-subtle, never an error treatment. The screen works exactly as
+   designed; what is missing is upstream of it. */
+
+.oe__blocked {
+    margin-top: var(--upos-space-gap-section);
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+    padding: var(--upos-space-pad-inset);
+    border: 1px dashed var(--upos-border);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+}
+
+.oe__blocked-what {
+    margin: 0;
+    font: var(--upos-type-row);
+    color: var(--upos-ink);
+}
+
+.oe__blocked-needs,
+.oe__gap-line {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.oe__blocked-needs code,
+.oe__gap-line code {
+    font: 700 11.5px/1 ui-monospace, Menlo, monospace;
+}
+
+/* A blocked control keeps its designed position and says what it is. */
+.oe__blocked-pill {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    padding: var(--upos-space-pad-pill);
+    border-radius: var(--upos-radius-pill);
+    background: var(--upos-surface-inset);
+    border: 1px dashed var(--upos-border);
+    color: var(--upos-ink-subtle);
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.oe__cart .oe__blocked-pill {
+    background: var(--upos-surface);
+}
+
+/* An error names the cause and the next move, in one line (§10). */
+.oe__error {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-status-late-text);
+}
+
+.oe__sent-line {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-status-ready-text);
+}
+
+/* The cart line and the send button are child components, so their layout hooks
+   need ::deep to reach past this screen's scope. */
+.oe__foot ::deep .u-btn {
+    width: 100%;
+}
+
+/* ─── Handheld ───────────────────────────────────────────────────────────────
+   Part II-A · Order entry · Handheld, provisional. Below 800px of shell width
+   the three panes cannot be drawn: 170px rail + 380px cart + 44px grid padding
+   + one 190px tile is 784px before the screen holds an item, and the device
+   that prompted this — a Datalogic Memor 20, 1080x2160 at 440dpi — reports a
+   393x785 CSS-pixel portrait viewport, the whole panel, because the terminal
+   hides Android's status and navigation bars rather than sharing the screen
+   with them (MainActivity; Part II-A · Handheld, "The host's system bars"). It
+   reported 393x713 while the window was fitted to those bars. Nothing in this
+   file was written against either height — the rules below size from the
+   container and from tokens, which is why the viewport could change underneath
+   them without a single value moving.
+
+   The step measures the shell, not the viewport, so the back office's fixed
+   1440x900 preview frame keeps the wide layout however narrow the browser
+   window gets, and a 393px preview frame in the same window gets this one.
+
+   Nothing below is a new pattern. The chip row is Part II-D's browse strip with
+   flex:1 dropped, the summary bar is Part II-D's bag bar at staff scale, the
+   row is MenuItemCard's shipped ListRow form, and the sheet is the .u-drawer
+   recipe with its inset flipped to the bottom edge — same fl-rise, same
+   --upos-dur-slow, no seventh keyframe (§8). */
+
+@container upos-shell (max-width: 800px) {
+
+    /* Three columns become one, in three rows: the chip row, the menu taking
+       the height, the summary bar above the shell's nav. */
+    .oe {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    /* Category rail, 170px column -> a horizontally scrolling chip row, 62px.
+       The rail's inset fill and its hairline, turned through ninety degrees. */
+    .oe__rail {
+        grid-row: 1;
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: var(--upos-space-gap-chip);
+        min-height: 62px;
+        box-sizing: border-box;
+        padding: 7px var(--upos-space-page);
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-right: none;
+        border-bottom: 1px solid var(--upos-border);
+        scrollbar-width: none;
+    }
+
+    .oe__rail::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Same fill, same type, same selection rule as the rail's buttons; only the
+       radius moves. A row of --upos-radius-inset buttons reads as a broken grid
+       and a row of pills reads as a filter strip. flex:none rather than the
+       kiosk strip's flex:1 — at 393px the categories run off the edge rather
+       than share it. */
+    .oe__cat {
+        flex: none;
+        padding: 0 16px;
+        border-radius: var(--upos-radius-pill);
+        white-space: nowrap;
+    }
+
+    .oe__menu {
+        grid-row: 2;
+    }
+
+    .oe__menu-head {
+        padding: var(--upos-space-gap-row) var(--upos-space-page) 0;
+    }
+
+    .oe__grid-scroll {
+        padding: var(--upos-space-page);
+    }
+
+    /* One column, not auto-fill. A row grid at minmax would put two abreast at
+       560px and three at 780px, which is neither the tile grid nor a list, and
+       would put a third layout into a rule whose whole point is that there is
+       one. The row form itself is MenuItemCard's (MenuItemCard.razor.css). */
+    .oe__grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--upos-space-gap-row);
+    }
+
+    /* ─── Summary bar, 64px ───────────────────────────────────────────────
+       Part II-D's bag bar at staff scale, on --upos-surface under a 1px
+       hairline, sitting directly above the shell's 78px nav. */
+    .oe__summary {
+        grid-row: 3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--upos-space-gap-inline);
+        min-height: 64px;
+        padding: 0 var(--upos-space-page);
+        box-sizing: border-box;
+        border-top: 1px solid var(--upos-border);
+        background: var(--upos-surface);
+    }
+
+    .oe__summary-figures {
+        display: flex;
+        align-items: baseline;
+        gap: var(--upos-space-gap-inline);
+        min-width: 0;
+    }
+
+    .oe__summary-kicker {
+        font: var(--upos-type-label);
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--upos-ink-subtle);
+    }
+
+    .oe__summary-count {
+        font: 800 15px/1 Archivo, system-ui, sans-serif;
+        color: var(--upos-ink);
+    }
+
+    .oe__summary-total {
+        font: 800 15px/1 Archivo, system-ui, sans-serif;
+        color: var(--upos-accent-deep);
+    }
+
+    /* .u-btn already sets --upos-touch-terminal, so the bar's primary needs
+       nothing but its width held back off the figures. */
+    .oe__summary ::deep .u-btn {
+        flex: none;
+    }
+
+    /* ─── The check as a sheet ────────────────────────────────────────────
+       The .u-drawer recipe with its inset flipped from top/right/bottom to
+       left/right/bottom: full width, max-height 90%, --upos-radius-panel on the
+       two top corners only, --upos-shadow-modal, fl-rise at --upos-dur-slow.
+       Closed, it is out of the layout and out of the accessibility tree.
+
+       The cap is a band and not the drawer recipe's 82%, and it is the second
+       half of the three-lines rule below. The sheet is height:auto between its
+       two insets, so what it asks for is head + line region + footer — 547px on
+       the Memor 20, against a destination of 577px once the host stops drawing
+       under Android's bars. A percentage cap cannot be read against that: 82%
+       is 473px, which is 74px short of the ask, and it was the cap and not the
+       line region that pushed the totals up over the second line. So the cap
+       says what it is actually for. The scrim keeps one --upos-space-gap-section
+       band at the head of the destination and the sheet takes the rest, which
+       is a visible strip of the menu on every host rather than a percentage
+       that has to be re-derived for each one. */
+    .oe__cart {
+        display: none;
+    }
+
+    .oe__cart.is-open {
+        display: flex;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2;
+        max-height: calc(100% - var(--upos-space-gap-section));
+        border-left: none;
+        border-top: 1px solid var(--upos-border);
+        border-radius: var(--upos-radius-panel) var(--upos-radius-panel) 0 0;
+        background: var(--upos-surface);
+        box-shadow: var(--upos-shadow-modal);
+        animation: fl-rise var(--upos-dur-slow) var(--upos-ease);
+    }
+
+    /* The three bands are structurally unchanged and lose only the panel's
+       padding: inside the sheet every edge is the page step. The list already
+       stood at 14px top and bottom, so what moves is the panel's 22px sides on
+       all three bands and the header's and footer's 18px top and bottom. It is
+       one rule rather than a side rule and a vertical one because the reason is
+       one reason — a 393px sheet is a page, and a page has a page step — and
+       because those 16px are 16px the check gets to spend on a line. */
+    .oe__cart-head,
+    .oe__lines,
+    .oe__foot {
+        padding: var(--upos-space-page);
+    }
+
+    /* ─── Three lines before the totals ───────────────────────────────────
+       The line region asks for three lines rather than taking what is left
+       over. What is left over is what put the totals across the second line on
+       the device: the sheet's header and its pinned footer are both flex:none,
+       so a flex:1 list gets the remainder of the cap and the remainder was 98px.
+
+       The height is measured, not chosen. A cart line is exactly
+       --upos-touch-terminal tall — CartLine has no height of its own, and the
+       QtyStepper's two buttons inside it carry the touch floor, which is what
+       sets the line's 48px. The list stacks them at --upos-space-gap-line. So
+       three lines is three touch floors and their two gaps, and the third gap is
+       one more: it puts the top edge of the gap before the fourth line inside
+       the region, which is what makes a full list read as scrollable rather than
+       as finished. The list's own 14px band above and below sits outside this,
+       because the box is content-box.
+
+       flex-basis and not min-height. A floor would clip the footer off the
+       bottom of the sheet on any host too short to hold header + three lines +
+       footer; a basis is a request that shrinks last, so on such a host the
+       region gives way and the totals, SEND ALL and Charge stay whole. On the
+       Memor 20 nothing shrinks: the sheet asks for 547px — 109px of header,
+       208px here, 230px of footer — against a 577px destination and a cap that
+       allows 551px.
+
+       It is a floor as well as a ceiling on purpose. With one line on the check
+       the region still stands three lines tall, so the sheet does not grow under
+       the thumb as the second and third items are tapped in. A sheet that
+       resizes on every tap is a sheet whose Charge button moves. */
+    .oe__lines {
+        flex: 1 1 calc(var(--upos-touch-terminal) * 3 + var(--upos-space-gap-line) * 3);
+    }
+
+    /* The footer's tax-and-tender paragraph folds here, and only here. It is the
+       one thing in the sheet's pinned footer that is not the check, and on a
+       393px sheet it is 72px — more than a line and a half of the check it is
+       annotating. Nothing it names goes unsaid at this width: the Tax row still
+       reads NO TAX RULE · GAP-08 in position and the Charge block still reads
+       PAYMENT SCREEN AND PAYMENTS DOMAIN · GAP-08 under it, which are the same
+       two facts in the two places a reader meets them. GAP-13 is the one thing
+       the fold costs, and it is stated in full in the 1440 panel, which is the
+       primary design. */
+    .oe__foot .oe__gap-line {
+        display: none;
+    }
+
+    /* The sheet's header wraps to two rows at this width, and the order is set
+       rather than left to the source: the check label and the close control
+       take the first row, and the loyalty control drops under them. The design
+       header is three things — label, loyalty, close — and it would fit one
+       row; what does not fit is this build's two blocked GAP pills, which are
+       development annotations rather than screen content, so the second row is
+       an artefact of the scaffolding and not of the design. */
+    .oe__cart-head {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        row-gap: var(--upos-space-gap-row);
+    }
+
+    .oe__check {
+        flex: 1 1 auto;
+    }
+
+    .oe__cart-head > .oe__blocked-pill {
+        order: 1;
+    }
+
+    .oe__sheet-close {
+        display: inline-flex;
+        order: 0;
+        margin-left: auto;
+    }
+
+    /* The kit's .u-scrim, unanimated exactly as the kit leaves it: a scrim that
+       slides is a scrim that reads as a panel. It is inset to .oe, so it covers
+       the destination and never the shell's bottom nav. */
+    .oe__scrim.is-open {
+        display: block;
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: var(--upos-scrim);
+        backdrop-filter: blur(var(--upos-blur-scrim));
+        -webkit-backdrop-filter: blur(var(--upos-blur-scrim));
+    }
+}
+
+/* §8: under prefers-reduced-motion, fl-rise reduces to an opacity fade. */
+@media (prefers-reduced-motion: reduce) {
+    .oe__cart.is-open {
+        animation-name: none;
+        transition: opacity var(--upos-dur-fast) var(--upos-ease);
+    }
+}

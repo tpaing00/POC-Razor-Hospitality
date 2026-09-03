@@ -1,0 +1,529 @@
+/* Menu manager — handbook Part II-B. Every value here is either a token or a
+   literal the spec states in px. No hex appears in this file.
+
+   This page does NOT take the shell's .panel class: the panel's 32px padding
+   would inset the three panes off their own hairlines, and Part II-B's preamble
+   wants the main panel at overflow:hidden with the panes running edge to edge.
+   .mm reproduces the panel chrome and lets the panes fill it. */
+
+.mm {
+    display: flex;
+    flex-direction: column;
+    min-width: 1000px;
+    background: var(--upos-surface);
+    border-radius: var(--upos-radius-panel);
+    box-shadow: var(--upos-shadow-card);
+    overflow: hidden;
+    position: relative;
+}
+
+/* One quiet line, full width, above the panes. Not an error treatment — the
+   screen is working exactly as designed, on data that is not the API's. */
+.mm__notice {
+    margin: 0;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--upos-border);
+    background: var(--upos-surface-inset);
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+/* A write that failed against a live API is a real error and takes the late ink
+   (§4: words take the text tokens, never the fills). */
+.mm__notice--write {
+    color: var(--upos-status-late-text);
+}
+
+.mm__panes {
+    display: flex;
+    align-items: stretch;
+}
+
+/* ─── Pane 1 · major categories, 200px ──────────────────────────────────── */
+
+.mm__rail {
+    flex: none;
+    width: 200px;
+    padding: 24px 0;
+    border-right: 1px solid var(--upos-border);
+}
+
+.mm__rail-kicker {
+    margin: 0;
+    padding: 0 22px 14px;
+    font: var(--upos-type-label);
+    font-size: 9.5px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.mm__major {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    width: calc(100% - 24px);
+    margin: 2px 12px;
+    padding: 12px 14px;
+    border: none;
+    border-radius: var(--upos-radius-inset);
+    background: transparent;
+    color: var(--upos-ink-subtle);
+    font: 700 13px/1.35 Archivo, system-ui, sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--upos-dur-fast) var(--upos-ease),
+                color var(--upos-dur-fast) var(--upos-ease);
+}
+
+/* A quieter selection than the sidebar's accent pill: two accent pills in one
+   row of chrome compete (Part II-B). */
+.mm__major.is-selected {
+    background: var(--upos-surface-inset);
+    color: var(--upos-ink);
+}
+
+.mm__major:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}
+
+.mm__major-count {
+    flex: none;
+    font: 700 11px/1 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+@media (hover: hover) {
+    .mm__major:hover {
+        background: var(--upos-surface-hover);
+        color: var(--upos-ink);
+    }
+}
+
+/* ─── Pane 2 · item list, 400px ─────────────────────────────────────────── */
+
+.mm__list {
+    flex: none;
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--upos-border);
+    max-height: 760px;
+    overflow-y: auto;
+}
+
+.mm__list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--upos-border);
+}
+
+.mm__list-title {
+    margin: 0;
+    font: 800 14px/1.3 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink);
+}
+
+/* A bare text button, not a .u-btn — Part II-B specifies 700/12px in
+   --upos-accent-deep with no fill. */
+.mm__add {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--upos-accent-deep);
+    font: 700 12px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .04em;
+    cursor: pointer;
+}
+
+.mm__add:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 3px;
+    border-radius: var(--upos-radius-inset);
+}
+
+/* + ADD GROUP, drawn in position and inert — a group has nowhere to be written. */
+.mm__add--inert {
+    color: var(--upos-ink-subtle);
+    cursor: default;
+}
+
+.mm__chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--upos-space-gap-chip);
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--upos-border);
+}
+
+.mm__chips-note {
+    flex: 1 1 100%;
+    margin: 0;
+    font: 400 11.5px/1.45 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+/* ── Add-item form. §2's input contract, written here because the kit ships no
+      .u-input recipe (recorded in §12). Candidate for promotion into the kit. */
+
+.mm__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+    margin: 10px 10px 0;
+    padding: 12px;
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+}
+
+.mm__field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.mm__field-label {
+    font: var(--upos-type-label);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.mm__input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--upos-touch-terminal);
+    padding: 0 14px;
+    border: 1px solid var(--upos-border);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+    color: var(--upos-ink);
+    font: var(--upos-type-body);
+    transition: border-color var(--upos-dur-fast) var(--upos-ease),
+                background var(--upos-dur-fast) var(--upos-ease);
+}
+
+.mm__input::placeholder {
+    color: var(--upos-ink-subtle);
+}
+
+/* The focused field is the one white box on the card — the only place in UPOS a
+   control changes surface color to show state (§2). */
+.mm__input:focus {
+    outline: none;
+    border-color: var(--upos-accent);
+    background: var(--upos-surface);
+}
+
+.mm__input.is-invalid {
+    border-color: var(--upos-status-late);
+}
+
+.mm__field-error {
+    font: 700 11px/1.4 Archivo, system-ui, sans-serif;
+    color: var(--upos-status-late-text);
+}
+
+.mm__form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--upos-space-gap-row);
+}
+
+/* ── Rows ─────────────────────────────────────────────────────────────────── */
+
+.mm__rows {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 12px;
+}
+
+/* Part II-B gives the menu row its own geometry — 12px 14px, --upos-radius-inset,
+   margin 6px 10px 0, selected on --upos-surface-inset — which is denser than the
+   kit's .u-data-row. This is a call-site restyle of the contracted component, the
+   same move SideNav makes of .u-nav-item, and the selected accent border is
+   DataRow's own. ::deep reaches the row because DataRow renders it, so it carries
+   DataRow's scope rather than this page's. */
+.mm__rows ::deep .mm__row {
+    margin: 6px 10px 0;
+    padding: 12px 14px;
+    border-color: transparent;
+    background: transparent;
+}
+
+/* The inset fill is Part II-B's; the accent border is DataRow's own .is-selected,
+   restated here so this page's restyle cannot out-order it in the bundle. */
+.mm__rows ::deep .mm__row.is-selected {
+    background: var(--upos-surface-inset);
+    border-color: var(--upos-accent);
+}
+
+/* 86'd: the row dims and holds its place in the list (§4). */
+.mm__rows ::deep .mm__row.is-eightysixed {
+    opacity: .5;
+}
+
+.mm__rows ::deep .mm__row.is-eightysixed .mm__row-name {
+    text-decoration: line-through;
+}
+
+.mm__rows ::deep .mm__row-name {
+    font: var(--upos-type-row);
+    color: var(--upos-ink);
+}
+
+.mm__rows ::deep .mm__row-price {
+    font: var(--upos-type-row);
+    color: var(--upos-ink);
+}
+
+@media (hover: hover) {
+    .mm__rows ::deep .mm__row:hover {
+        background: var(--upos-surface-hover);
+    }
+}
+
+.mm__empty {
+    margin: 0;
+    padding: 24px;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+/* The availability badge — an instruction, not a status. Available reads 86 on
+   --upos-border in --upos-ink; 86'd reads ON on --upos-status-late in the on-dark
+   ink. It is the one interactive two-state badge in the product and the kit has
+   no recipe for it, so it lives here. */
+.mm ::deep .mm__86 {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    padding: 5px 12px;
+    border: none;
+    border-radius: var(--upos-radius-pill);
+    background: var(--upos-border);
+    color: var(--upos-ink);
+    font: 700 10.5px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform var(--upos-dur-fast) var(--upos-ease);
+}
+
+.mm ::deep .mm__86.is-eightysixed {
+    background: var(--upos-status-late);
+    color: var(--upos-kds-ink);
+}
+
+.mm ::deep .mm__86:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}
+
+.mm ::deep .mm__86:disabled {
+    cursor: default;
+    opacity: .6;
+}
+
+@media (hover: hover) {
+    .mm ::deep .mm__86:not(:disabled):hover {
+        transform: translateY(-2px);
+    }
+}
+
+/* ─── Pane 3 · detail ───────────────────────────────────────────────────── */
+
+.mm__detail {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-card);
+    padding: 24px 28px;
+    max-height: 760px;
+    overflow-y: auto;
+}
+
+.mm__detail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+}
+
+.mm__detail-name {
+    margin: 0;
+    font: var(--upos-type-heading);
+    color: var(--upos-ink);
+}
+
+.mm__detail-head-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* The bordered-quiet pill Part III describes, drawn inert: the modal behind it
+   is plating assets end to end (GAP-06). */
+.mm__plating {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--upos-border);
+    border-radius: var(--upos-radius-pill);
+    background: transparent;
+    color: var(--upos-ink-subtle);
+    font: 700 11px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .03em;
+}
+
+.mm__detail-price {
+    font: 800 16px/1 Archivo, system-ui, sans-serif;
+    color: var(--upos-accent-deep);
+}
+
+.mm__detail-desc {
+    margin: 0;
+    max-width: 620px;
+    font: var(--upos-type-body);
+    color: var(--upos-ink);
+}
+
+.mm__detail-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    flex-wrap: wrap;
+}
+
+.mm__avail {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--upos-space-gap-inline);
+}
+
+.mm__avail-label {
+    font: var(--upos-type-row);
+    color: var(--upos-ink-subtle);
+}
+
+.mm__image {
+    max-width: 280px;
+    border-radius: var(--upos-radius-card);
+}
+
+/* ── Blocked sections. Quiet, on the inset fill in subtle ink, never an error:
+      the section is not broken, it is unbuilt, and the panel says what it needs. */
+
+.mm__block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+}
+
+.mm__block-kicker {
+    margin: 0;
+    font: 700 11px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.mm__blocked {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    border: 1px dashed var(--upos-border);
+    border-radius: var(--upos-radius-card);
+    background: var(--upos-surface-inset);
+}
+
+.mm__blocked-what {
+    margin: 0;
+    font: 700 12.5px/1.4 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.mm__blocked-needs {
+    margin: 0;
+    font: 400 12.5px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.mm__gap-line {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.mm__blocked code,
+.mm__blocked-needs code,
+.mm__chips-note code,
+.mm__gap-line code {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: .92em;
+}
+
+/* The COGS trio in its designed position — repeat(3,1fr) at 10px, inset, 14px,
+   centered — carrying its labels and no invented values. */
+.mm__costs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.mm__cost {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px;
+    border: 1px dashed var(--upos-border);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+}
+
+.mm__cost-label {
+    font: var(--upos-type-label);
+    font-size: 9.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.mm__cost-value {
+    font: 700 13px/1 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+/* §3: "On dark surfaces, accents are --upos-on-dark-accent." The two accent-inked
+   things on this screen — the + ADD ITEM text button and the detail price — are
+   --upos-accent-deep per Part II-B, which is a light-surface pairing: on dark it
+   lands at 1.5:1 over --upos-surface, and §11 makes AA binding. The accent presets
+   themselves do not move between themes (§11), so the ink role does. */
+:root[data-theme="dark"] .mm__add,
+:root[data-theme="dark"] .mm__detail-price {
+    color: var(--upos-on-dark-accent);
+}
+
+.mm__groups-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.mm__groups-title {
+    margin: 0;
+    font: 800 14px/1.3 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink);
+}

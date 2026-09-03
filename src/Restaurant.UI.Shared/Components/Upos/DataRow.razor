@@ -1,0 +1,90 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+
+@* Handbook Part III · DataRow.
+   Classes: .u-data-row, .is-late.
+   Props:   Leading, ChildContent, Trailing, BorderTone (null keeps
+            --upos-border), OnClick (no handler renders a non-interactive row).
+   States:  rest — white fill, 1px border, no shadow; hover translateY(-3px) onto
+            --upos-shadow-card on pointer surfaces; status-bordered where the
+            record has a status; selected, where a list drives a detail pane.
+   Notes:   the one exception to "no borders as elevation" in the whole kit (§7),
+            and one of §4's five named places where status shows. Rows never
+            share a table border — a list of these replaces <table> in the
+            Bootstrap migration (§12). Lateness reaches the row as a tone the
+            parent derived; nothing here reads a stored flag. *@
+
+@if (Interactive)
+{
+    <div role="button"
+         tabindex="0"
+         @onclick="OnClick"
+         @onkeydown="OnKeyDown"
+         @attributes="Attributes">
+        @Content
+    </div>
+}
+else
+{
+    <div @attributes="Attributes">
+        @Content
+    </div>
+}
+
+@code {
+    /// <summary>The leading slot — a channel badge, an avatar, a status dot.</summary>
+    [Parameter] public RenderFragment? Leading { get; set; }
+
+    /// <summary>The row's body. Takes the remaining width.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>The trailing slot — a price, a chip, a control. Sits hard right.</summary>
+    [Parameter] public RenderFragment? Trailing { get; set; }
+
+    /// <summary>The status hue on the 1px border. Null keeps --upos-border. Late is
+    /// the tone a parent passes after deriving it from a timestamp and a threshold —
+    /// this component never reads a stored flag (§4).</summary>
+    [Parameter] public StatusTone? BorderTone { get; set; }
+
+    /// <summary>Selected, where a list drives a detail pane. The border goes
+    /// --upos-accent while the row owns the pane.</summary>
+    [Parameter] public bool Selected { get; set; }
+
+    /// <summary>No handler renders a non-interactive row — which is what the
+    /// channels queue passes, because those rows are a monitor.</summary>
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private bool Interactive => OnClick.HasDelegate;
+
+    private RenderFragment Content => @<text>
+        @if (Leading is not null)
+        {
+            <span class="u-data-row__leading">@Leading</span>
+        }
+        <span class="u-data-row__body">@ChildContent</span>
+        @if (Trailing is not null)
+        {
+            <span class="u-data-row__trailing">@Trailing</span>
+        }
+    </text>;
+
+    private IReadOnlyDictionary<string, object> Attributes => UposAttributes.Merge(
+        AdditionalAttributes,
+        "u-data-row"
+            + (BorderTone == StatusTone.Late ? " is-late" : string.Empty)
+            + (BorderTone == StatusTone.New ? " u-data-row--new" : string.Empty)
+            + (BorderTone == StatusTone.Fired ? " u-data-row--fired" : string.Empty)
+            + (BorderTone == StatusTone.Ready ? " u-data-row--ready" : string.Empty)
+            + (Selected ? " is-selected" : string.Empty)
+            + (Interactive ? " u-data-row--interactive" : string.Empty));
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key is "Enter" or " ")
+        {
+            await OnClick.InvokeAsync();
+        }
+    }
+}

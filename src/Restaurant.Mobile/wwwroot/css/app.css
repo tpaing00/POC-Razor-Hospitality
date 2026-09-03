@@ -1,7 +1,19 @@
-﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+﻿/* Layout scaffolding only (handbook §12, migration step 5): every color, radius,
+   shadow and font value belongs to a token, and the two UPOS stylesheets in
+   index.html carry them. The template's Helvetica stack and its open-iconic
+   @import both went with Bootstrap — this file loads after upos-tokens.css, so a
+   font-family here would have quietly outranked Archivo on every screen.
 
-html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+   The terminal shell measures itself against its host, so the host has to have a
+   height to measure: without these three the shell collapses to its content and
+   the bottom nav floats up under the grid. */
+
+html, body, #app {
+    height: 100%;
+}
+
+body {
+    overflow: hidden;
 }
 
 h1:focus {

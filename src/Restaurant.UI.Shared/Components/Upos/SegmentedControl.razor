@@ -1,0 +1,52 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+
+@* Handbook Part III · SegmentedControl.
+   Classes: .u-segmented, .u-segmented__opt, .is-active.
+   Props:   Options, Selected, OnSelect, MinHeight (px).
+   States:  exactly one option active, on --upos-surface with --upos-shadow-card;
+            the inactive options in --upos-ink at .66; hover on an inactive
+            option, pointer surfaces only.
+   Notes:   terminal call sites pass MinHeight 48 to reach --upos-touch-terminal.
+            The track is --upos-surface-veil, which inverts on dark rather than
+            staying white (§7). An inactive option is a tappable choice, not a
+            disabled control, so it owes AA — the recipe already gives it
+            --upos-ink at .66 rather than --upos-ink-subtle.
+            The KDS station strip is not this component. *@
+
+<div role="group" aria-label="@Label" @attributes="Attributes">
+    @foreach (var option in Options)
+    {
+        var isActive = string.Equals(option, Selected, StringComparison.Ordinal);
+        <button type="button"
+                class="u-segmented__opt @(isActive ? "is-active" : null)"
+                style="@OptionStyle"
+                aria-pressed="@(isActive ? "true" : "false")"
+                @onclick="() => Select(option)">@option</button>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<string> Options { get; set; } = Array.Empty<string>();
+
+    /// <summary>The active option. Exactly one is active at a time.</summary>
+    [Parameter] public string? Selected { get; set; }
+
+    [Parameter] public EventCallback<string> OnSelect { get; set; }
+
+    /// <summary>Minimum option height in px. 48 on the terminal, against the
+    /// artboard's 25-33px (§11 outranks the artboard).</summary>
+    [Parameter] public int? MinHeight { get; set; }
+
+    /// <summary>The accessible name for the group of choices.</summary>
+    [Parameter] public string Label { get; set; } = "View";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string? OptionStyle => MinHeight is null ? null : $"min-height:{MinHeight}px";
+
+    private IReadOnlyDictionary<string, object> Attributes =>
+        UposAttributes.Merge(AdditionalAttributes, "u-segmented");
+
+    private Task Select(string option) => OnSelect.InvokeAsync(option);
+}

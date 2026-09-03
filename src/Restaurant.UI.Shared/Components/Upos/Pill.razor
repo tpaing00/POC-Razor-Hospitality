@@ -1,0 +1,73 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+
+@* Handbook Part III · Pill.
+   Classes: .u-pill.
+   Props:   Label, Leading (a dot or an icon), Selected, Bordered, OnClick
+            (no handler renders a static tag).
+   States:  static tag; selectable, selected — --upos-grad-primary in white — or
+            not; bordered-quiet, the transparent fill under 1px --upos-border
+            that the re-fire and VIEW PLATING controls take.
+   Notes:   .u-pill is the neutral tag. Anything carrying a status word is a
+            StatusChip and anything carrying an allergen is an AllergenChip,
+            because the four hues and the violet are reserved (§4, §5). A
+            tappable pill clears --upos-touch-terminal on the terminal and
+            --upos-touch-kiosk on the kiosk — pass MinHeight there. The kiosk
+            merchandising tag overrides the recipe outright at its call site and
+            is not this component's job. *@
+
+@if (Interactive)
+{
+    <button type="button"
+            aria-pressed="@(Selected ? "true" : "false")"
+            @onclick="OnClick"
+            @attributes="Attributes">
+        @if (Leading is not null)
+        {
+            <span class="u-pill__leading">@Leading</span>
+        }
+        @Label
+    </button>
+}
+else
+{
+    <span @attributes="Attributes">
+        @if (Leading is not null)
+        {
+            <span class="u-pill__leading">@Leading</span>
+        }
+        @Label
+    </span>
+}
+
+@code {
+    [Parameter] public string? Label { get; set; }
+
+    /// <summary>A leading dot or inline SVG.</summary>
+    [Parameter] public RenderFragment? Leading { get; set; }
+
+    /// <summary>Selected fills --upos-grad-primary. Only meaningful when tappable.</summary>
+    [Parameter] public bool Selected { get; set; }
+
+    /// <summary>Bordered-quiet: transparent fill under 1px --upos-border.</summary>
+    [Parameter] public bool Bordered { get; set; }
+
+    /// <summary>Minimum height in px. The recipe is a tag, not a target; a tappable
+    /// pill passes 48 on the terminal and 60 on the kiosk (§11).</summary>
+    [Parameter] public int? MinHeight { get; set; }
+
+    /// <summary>No handler renders a static tag; a handler renders a button.</summary>
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private bool Interactive => OnClick.HasDelegate;
+
+    private IReadOnlyDictionary<string, object> Attributes => UposAttributes.Merge(
+        AdditionalAttributes,
+        "u-pill"
+            + (Interactive ? " u-pill--interactive" : string.Empty)
+            + (Bordered ? " u-pill--bordered" : string.Empty)
+            + (Selected ? " is-selected" : string.Empty),
+        MinHeight is null ? null : $"min-height:{MinHeight}px");
+}

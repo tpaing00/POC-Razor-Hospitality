@@ -1,0 +1,34 @@
+/* Geometry the kit does not provide: Part III's "the glyph is 34px on every
+   surface and only the hit area moves" needs a centring box around the recipe,
+   because .u-icon-btn hard-sizes itself to 34px. */
+
+.u-icon-btn__hit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+/* Focus and disabled, neither of which the verbatim kit ships. */
+.u-icon-btn:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}
+
+.u-icon-btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+@media (hover: hover) {
+    .u-icon-btn:disabled:hover {
+        transform: none;
+        color: var(--upos-ink-subtle);
+    }
+}
+
+/* The glyph arrives as a RenderFragment authored by the call site, so it carries
+   the caller's scope, not this one's — ::deep is the only way to reach it. */
+.u-icon-btn ::deep svg {
+    display: block;
+}

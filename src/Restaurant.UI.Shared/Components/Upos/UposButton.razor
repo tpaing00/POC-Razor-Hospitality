@@ -1,0 +1,75 @@
+@namespace Restaurant.UI.Shared.Components.Upos
+
+@* Handbook Part III · UposButton.
+   Classes: .u-btn with .u-btn--primary | .u-btn--secondary | .u-btn--ghost.
+   Props:   Variant, Label, Icon, MinHeight, Disabled, OnClick.
+   States:  rest; hover translateY(-2px) on pointer surfaces (the kit's own
+            @media (hover:hover) block); pressed; disabled; and the two-second
+            confirmed label a call site holds, whose check is an inline SVG
+            passed through Icon, never a check character (§9).
+   Notes:   .u-btn already sets --upos-touch-terminal 48px, so MinHeight is how a
+            call site reaches --upos-touch-kiosk 60px or a 96px commit band.
+            A destructive control is Ghost with its label forced to --upos-ink at
+            the call site (§11) — there is no red variant and adding one would
+            make red decorative. The kit implements the hover lift, not the hover
+            fills; set those from §8's table at the call site. *@
+
+<button type="@Type"
+        disabled="@Disabled"
+        @onclick="OnClick"
+        @attributes="Attributes">
+    @if (Icon is not null)
+    {
+        <span class="u-btn__icon">@Icon</span>
+    }
+    @if (ChildContent is not null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        @Label
+    }
+</button>
+
+@code {
+    /// <summary>Primary, Secondary or Ghost — the three treatments the kit ships.</summary>
+    [Parameter] public ButtonVariant Variant { get; set; } = ButtonVariant.Primary;
+
+    /// <summary>The verb on the button (§10: verbs on buttons, sentence case).</summary>
+    [Parameter] public string? Label { get; set; }
+
+    /// <summary>A leading inline SVG. Never a glyph character (§9).</summary>
+    [Parameter] public RenderFragment? Icon { get; set; }
+
+    /// <summary>Optional slot, used in place of <see cref="Label"/> when a call site
+    /// needs markup rather than a word.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Minimum height in px. The recipe is already 48px; this reaches 60px
+    /// on the kiosk and the 96px commit bands.</summary>
+    [Parameter] public int? MinHeight { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>The HTML button type. Defaults to <c>button</c> so a button inside a
+    /// form does not submit it by accident.</summary>
+    [Parameter] public string Type { get; set; } = "button";
+
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private IReadOnlyDictionary<string, object> Attributes => UposAttributes.Merge(
+        AdditionalAttributes,
+        $"u-btn {VariantClass}",
+        MinHeight is null ? null : $"min-height:{MinHeight}px");
+
+    private string VariantClass => Variant switch
+    {
+        ButtonVariant.Secondary => "u-btn--secondary",
+        ButtonVariant.Ghost => "u-btn--ghost",
+        _ => "u-btn--primary"
+    };
+}

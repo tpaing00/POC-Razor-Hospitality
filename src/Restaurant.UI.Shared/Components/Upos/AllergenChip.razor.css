@@ -1,0 +1,27 @@
+/* §5's two pairings and the menu manager's toggled-off state. The kit ships the
+   light pairing only, and upos-components.css is copied verbatim, so the other
+   two are declared here — tokens throughout, no hex. */
+
+.u-chip-allergen--on-dark {
+    background: var(--upos-allergen-text);
+    color: var(--upos-kds-ink);
+}
+
+.u-chip-allergen--off {
+    background: var(--upos-surface-inset);
+    color: var(--upos-ink-subtle);
+}
+
+/* A chip rendered as a <button> needs the UA chrome removed; the recipe assumes
+   a <span>. */
+.u-chip-allergen--interactive {
+    border: none;
+    cursor: pointer;
+    transition: background var(--upos-dur-fast) var(--upos-ease),
+                color var(--upos-dur-fast) var(--upos-ease);
+}
+
+.u-chip-allergen--interactive:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}

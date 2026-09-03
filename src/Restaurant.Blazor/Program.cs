@@ -39,13 +39,27 @@ builder.Services.AddScoped(sp =>
     };
     var httpClient = new HttpClient(handler)
     {
-        BaseAddress = new Uri(apiBaseUrl)
+        BaseAddress = new Uri(apiBaseUrl),
+        // Prerender runs these calls inline, so the default 100s timeout turns an unreachable
+        // API into a hung page. 5s is well above a cold-start local API and well below the
+        // ~21s Windows TCP connect timeout, so MenuDataSource falls back promptly instead.
+        Timeout = TimeSpan.FromSeconds(5)
     };
     return httpClient;
 });
 Console.WriteLine($"API Base URL NEW: {apiBaseUrl}");
 // Add API service
 builder.Services.AddScoped<RestaurantApiService>();
+builder.Services.AddScoped<MenuDataSource>();
+builder.Services.AddScoped<DashboardDataSource>();
+
+// The terminal preview renders the same TerminalShell Restaurant.Mobile does, and
+// that shell now reads the device's battery and connection (handbook §12). This
+// host is a desktop browser with no device to read, so it registers the answer that
+// says so. Nothing here invents a charge level: the shell draws the absence of a
+// reading in the blocked treatment, which is what keeps the preview honest about
+// being a preview.
+builder.Services.AddSingleton<IDeviceStatus, UnknownDeviceStatus>();
 
 var app = builder.Build();
 

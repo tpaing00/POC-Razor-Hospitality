@@ -1,111 +1,23 @@
-﻿@page "/"
-@using Restaurant.Shared.Models.Dtos
-@using Restaurant.UI.Shared.Services
-@using Restaurant.UI.Shared
-@inject RestaurantApiService ApiService
+@page "/"
+@using Restaurant.UI.Shared.Components.Screens
 
-<h3>Restaurant Menu</h3>
+@* The terminal's only route, and a host rather than a screen. Everything it used
+   to draw — the menu read, tap to add, the quantity merge on a repeat tap, the
+   running total and the submit through CreateOrderAsync — now lives in
+   OrderEntryScreen in Restaurant.UI.Shared, so the same component renders here
+   in the MAUI WebView and in the back office's development preview. MAUI Blazor
+   Hybrid is Razor in a WebView: one implementation, two hosts, and no second
+   copy of the behaviour to keep in step.
 
-@if (isLoading)
-{
-    <p>Loading menu...</p>
-}
-else if (menuItems.Count == 0)
-{
-    <p>No menu items available.</p>
-}
-else
-{
-    @foreach (var category in menuItems.GroupBy(m => m.Category))
-    {
-        <h4>@category.Key</h4>
-        <div class="row">
-            @foreach (var item in category)
-            {
-                <div class="col-12 mb-3">
-                    <MenuItemCard MenuItem="@item"
-                                  ShowAddButton="true"
-                                  OnAdd="@AddToOrder" />
-                </div>
-            }
-        </div>
-    }
-}
+   What this page owns is what a host owns: the route, and the two literals that
+   belong to this device rather than to the screen. CustomerName and TableId keep
+   the values the POC terminal has always posted; nothing on the screen collects
+   either, and the floor plan that would pick a table is not built in this pass.
 
-<hr />
-<h4>Current Order (@orderItems.Count items)</h4>
-@if (orderItems.Any())
-{
-    <ul>
-        @foreach (var item in orderItems)
-        {
-            <li>@item.Quantity x @item.MenuItemName - $@item.Subtotal</li>
-        }
-    </ul>
-    <p><strong>Total: $@orderItems.Sum(x => x.Subtotal).ToString("F2")</strong></p>
-    <button class="btn btn-success" @onclick="SubmitOrder">Submit Order</button>
-}
+   The shell is TerminalShell — the 76px top bar and 78px bottom nav every
+   terminal destination inherits (Part II-A). ORDER is the destination that
+   exists, so it is the active one and the only one that answers a tap. *@
 
-@code {
-    private List<MenuItemDto> menuItems = new();
-    private List<OrderItemDto> orderItems = new();
-    private bool isLoading = true;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            menuItems = await ApiService.GetMenuItemsAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading menu: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private void AddToOrder(MenuItemDto menuItem)
-    {
-        var existingItem = orderItems.FirstOrDefault(x => x.MenuItemId == menuItem.Id);
-        if (existingItem != null)
-        {
-            existingItem.Quantity++;
-            existingItem.Subtotal = existingItem.Quantity * existingItem.UnitPrice;
-        }
-        else
-        {
-            orderItems.Add(new OrderItemDto
-            {
-                MenuItemId = menuItem.Id,
-                MenuItemName = menuItem.Name,
-                Quantity = 1,
-                UnitPrice = menuItem.Price,
-                Subtotal = menuItem.Price
-            });
-        }
-    }
-
-    private async Task SubmitOrder()
-    {
-        try
-        {
-            var createOrder = new Restaurant.Shared.Models.Dtos.CreateOrderDto
-            {
-                CustomerName = "Mobile User",
-                TableId = 1,
-                Items = orderItems
-            };
-
-            await ApiService.CreateOrderAsync(createOrder);
-            orderItems.Clear();
-            Console.WriteLine("Order submitted successfully!");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error submitting order: {ex.Message}");
-        }
-    }
-}
+<TerminalShell ActiveDestination="order">
+    <OrderEntryScreen CustomerName="Mobile User" TableId="1" />
+</TerminalShell>

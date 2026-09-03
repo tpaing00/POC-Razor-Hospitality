@@ -1,0 +1,29 @@
+/* The kit ships no focus ring and no disabled state — upos-components.css is
+   copied verbatim and never edited, so both live here, scoped to the component.
+   Tokens only; the offset puts the ring on the surface rather than on the fill,
+   where --upos-accent clears 3:1 against every ground the kit defines. */
+
+.u-btn:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}
+
+.u-btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+/* The lift is the kit's, inside its own @media (hover:hover) block. A disabled
+   button must not take it. */
+@media (hover: hover) {
+    .u-btn:disabled:hover {
+        transform: none;
+    }
+}
+
+/* Geometry the kit does not provide: the leading icon slot (§9, inline SVG). */
+.u-btn__icon {
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+}

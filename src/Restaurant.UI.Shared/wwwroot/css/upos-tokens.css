@@ -1,0 +1,161 @@
+/* UPOS Fusion Fluid — design tokens. Source of truth:
+   docs/design/reference/_ds/secondbrain-design-system-* /tokens/*.css
+   Renamed --sb-* → --upos-* per handbook Part I. */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;700;800&display=swap');
+
+/* TERMINAL BUILD (Restaurant.Mobile): delete the @import above and uncomment the
+   three @font-face rules below. An offline terminal cannot reach Google Fonts and
+   must still render Archivo (handbook §11, §12). Drop archivo-400/700/800.woff2
+   into Restaurant.Mobile/wwwroot/fonts/. The back office keeps the @import.
+
+@font-face { font-family:Archivo; font-style:normal; font-weight:400; font-display:swap;
+  src:url('../fonts/archivo-400.woff2') format('woff2'); }
+@font-face { font-family:Archivo; font-style:normal; font-weight:700; font-display:swap;
+  src:url('../fonts/archivo-700.woff2') format('woff2'); }
+@font-face { font-family:Archivo; font-style:normal; font-weight:800; font-display:swap;
+  src:url('../fonts/archivo-800.woff2') format('woff2'); }
+*/
+
+:root {
+  /* Ground */
+  --upos-ground: radial-gradient(1100px 700px at 88% -8%, #dbe7f2 0%, rgba(219,231,242,0) 62%),
+                 radial-gradient(900px 600px at -6% 12%, #e7eef0 0%, rgba(231,238,240,0) 60%),
+                 #eef1f5;
+  /* Surfaces */
+  --upos-surface: #ffffff;
+  --upos-surface-inset: #f4f7fa;
+  --upos-surface-hover: #f2f6fa;
+  --upos-surface-veil: rgba(255,255,255,.75); /* translucent veil: segmented track, glass top bar */
+  --upos-border: #e3e7ec;
+  --upos-panel-dark: #20262e;
+  --upos-grad-dark: linear-gradient(168deg,#20262e,#171c22);
+  /* Ink */
+  --upos-ink: #1b1f24;
+  --upos-ink-subtle: #8b95a1;
+  /* Blue rotation */
+  --upos-value-1: #22496a;
+  --upos-value-2: #33648b;
+  --upos-value-3: #4d84b8;
+  --upos-value-4: #2f7d8f;
+  --upos-on-dark-accent: #8fc9ff;
+  /* Accent (default slate; overridden by [data-accent]) */
+  --upos-accent: #33648b;
+  --upos-accent-deep: #22496a;
+  --upos-grad-primary: linear-gradient(135deg,var(--upos-accent),var(--upos-accent-deep));
+  --upos-grad-bar: linear-gradient(90deg,#6fa3cf,#2a5578);
+  --upos-grad-bar-v: linear-gradient(180deg,#6fa3cf,#2a5578); /* same stops, for a bar that grows upward */
+  /* Status */
+  --upos-status-new: #33648b;
+  --upos-status-fired: #f97316;   --upos-status-fired-text: #d95f06;
+  --upos-status-late: #ec3013;    --upos-status-late-text: #ae1800;
+  --upos-status-ready: #22c55e;   --upos-status-ready-text: #159548;
+  --upos-allergen-bg: rgba(139,92,246,.16);
+  --upos-allergen-text: #7c3aed;
+  /* Type roles (font shorthand: weight size/line-height family) */
+  --upos-type-display: 800 28px/1.1 Archivo,system-ui,sans-serif;
+  --upos-type-heading: 800 18px/1.25 Archivo,system-ui,sans-serif;
+  --upos-type-row: 700 13px/1.35 Archivo,system-ui,sans-serif;
+  --upos-type-body: 400 13px/1.5 Archivo,system-ui,sans-serif;
+  --upos-type-label: 700 10px/1 Archivo,system-ui,sans-serif; /* pair with letter-spacing .1–.2em, uppercase */
+  --upos-type-mono: 800 13px/1 ui-monospace,Menlo,monospace;
+  /* Shape */
+  --upos-radius-panel: 26px;
+  --upos-radius-card: 18px;
+  --upos-radius-inset: 14px;
+  --upos-radius-pill: 999px;
+  /* Shape — mobile (transcribed from vendored shape.css) */
+  --upos-radius-panel-ios-mobile: 24px;
+  --upos-radius-panel-android-mobile: 18px;
+  --upos-radius-card-mobile: 16px;
+  /* Elevation */
+  --upos-shadow-card: 0 22px 54px -36px rgba(27,31,36,.5);
+  --upos-shadow-modal: 0 40px 90px -40px rgba(20,25,31,.9);
+  --upos-shadow-button: 0 12px 24px -14px rgba(34,73,106,.95);
+  --upos-scrim: rgba(20,25,31,.5);
+  --upos-blur-glass: 14px;
+  --upos-blur-scrim: 6px;
+  /* Motion */
+  --upos-ease: cubic-bezier(.22,1,.36,1);
+  --upos-dur-fast: .25s;
+  --upos-dur-slow: .45s;
+  /* Press feedback on a touch surface. §8 states the value literally —
+     "press feedback is a ripple tint rgba(51,100,139,.14) with no transform at
+     all" — and the kit had no token for it, so every terminal call site was
+     writing the literal. §12 rules that if the value you need has no token, add
+     the token. It does not move with the theme: the tint is the accent's blue at
+     .14 and reads on both grounds. */
+  --upos-press-tint: rgba(51,100,139,.14);
+  /* Touch targets */
+  --upos-touch-terminal: 48px;
+  --upos-touch-kiosk: 60px;
+  /* Spacing steps (transcribed from vendored spacing.css) */
+  --upos-space-page: 14px;
+  --upos-space-main-offset: 14px;
+  --upos-space-gap-row: 8px;
+  --upos-space-gap-row-loose: 9px;
+  --upos-space-gap-card: 16px;
+  --upos-space-gap-chip: 7px;
+  --upos-space-gap-inline: 10px;
+  --upos-space-gap-section: 26px;
+  /* The gap between two lines on a check. It is not one of the vendored steps —
+     the check's list has always stacked at 12px, which is a step above
+     --upos-space-gap-inline and below --upos-space-gap-card and is neither — and
+     the literal was written at the one call site that needed it. It has to be a
+     token now because the handheld sheet sizes its line region from it: three
+     lines and their gaps is a height, and a height built half from a token and
+     half from a literal is a height nobody can re-derive. §12: if the value you
+     need has no token, add the token. */
+  --upos-space-gap-line: 12px;
+  --upos-space-pad-panel: 26px 24px 28px;
+  --upos-space-pad-hero: 30px 32px 26px;
+  --upos-space-pad-card: 24px 26px;
+  --upos-space-pad-card-sm: 17px 19px;
+  --upos-space-pad-row: 15px 20px;
+  --upos-space-pad-row-table: 12px 14px;
+  --upos-space-pad-inset: 12px 15px;
+  --upos-space-pad-btn: 11px 22px;
+  --upos-space-pad-btn-sm: 8px 16px;
+  --upos-space-pad-chip: 3px 10px;
+  --upos-space-pad-pill: 6px 14px;
+  /* KDS derived scope */
+  --upos-kds-board: var(--upos-grad-dark);
+  --upos-kds-inset: rgba(238,241,245,.06);
+  --upos-kds-inset-hover: rgba(238,241,245,.12);
+  --upos-kds-ink: #f4f7fa;
+  --upos-kds-status-new: #8fc9ff;
+  --upos-kds-status-late: #ff8a70;
+  --upos-kds-status-ready: #9ee6b4;
+}
+
+[data-accent="teal"]   { --upos-accent:#2f7d8f; --upos-accent-deep:#1c4a54; }
+[data-accent="indigo"] { --upos-accent:#4a5a94; --upos-accent-deep:#2b3560; }
+[data-accent="sky"]    { --upos-accent:#4d84b8; --upos-accent-deep:#2a5578; }
+
+[data-theme="dark"] {
+  --upos-ground: #14181d;
+  --upos-surface: #1c2229;
+  --upos-surface-inset: #171c22;
+  --upos-surface-hover: #20262e;
+  /* The veil inverts on dark: the on-dark ink at low alpha, the same move
+     --upos-kds-inset makes. At .05 an inactive --upos-ink-subtle option reads
+     4.97:1 over --upos-surface-inset and 4.61:1 over --upos-surface. */
+  --upos-surface-veil: rgba(238,241,245,.05);
+  --upos-border: #2a323b;
+  --upos-ink: #eef1f5;
+  --upos-ink-subtle: #8b95a1;
+}
+
+body {
+  margin: 0;
+  background: var(--upos-ground);
+  color: var(--upos-ink);
+  font: var(--upos-type-body);
+  transition: background var(--upos-dur-fast) var(--upos-ease);
+}
+
+@keyframes fl-rise   { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fl-pulse  { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.35; transform:scale(.7); } }
+@keyframes fl-grow   { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+@keyframes fl-sheen  { from { background-position:-320px 0; } to { background-position:320px 0; } }
+@keyframes fl-drift  { 0%,100% { transform:translate3d(0,0,0) scale(1); } 50% { transform:translate3d(24px,-18px,0) scale(1.08); } }
+@keyframes fl-marquee{ from { transform:translateX(0); } to { transform:translateX(-50%); } }

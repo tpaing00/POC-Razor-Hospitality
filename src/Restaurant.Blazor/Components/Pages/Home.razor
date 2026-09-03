@@ -1,38 +1,275 @@
-﻿@page "/"
-@rendermode InteractiveServer
+@page "/"
+@using System.Globalization
+@using Restaurant.Shared.Models.Dtos
+@using Restaurant.UI.Shared.Services
+@inject DashboardDataSource Dashboard
+
+@* Handbook Part II-B · Dashboard. The blocks run in the spec's order: the AI
+   insight banner, the title row, the four-tile KPI strip, then the charts row —
+   sales by daypart beside top items, with the exception row under the list.
+
+   Two of the design's four KPI tiles carry real figures from
+   DashboardDataSource; two rest on a model the POC does not have and render as
+   blocked tiles in their designed position, citing their gap, on
+   --upos-surface-inset in --upos-ink-subtle behind a dashed hairline — the Menu
+   manager's blocked-panel treatment, and never an error treatment. The screen is
+   working exactly as designed; what is missing is upstream of it.
+
+   No render mode here: App.razor puts every route inside one interactive subtree
+   at prerender:false, so a @@rendermode on a page below that point is inherited
+   and ignored (see the comment in App.razor). *@
 
 <PageTitle>Dashboard</PageTitle>
 
-<h1>Welcome to Restaurant Back-office</h1>
+<section class="panel dash">
 
-<p>Welcome to your new app.</p>
+    @* One quiet line, above everything, in the Menu manager's wording and
+       treatment. IsLive is read after the load it describes. *@
+    @if (_loading)
+    {
+        <p class="dash__notice">Loading the day.</p>
+    }
+    else if (!_isLive)
+    {
+        <p class="dash__notice">
+            Seed data · the reports API is unreachable, so these figures are a design-time stand-in
+            and nothing on this screen was measured from a service.
+        </p>
+    }
 
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Orders</h5>
-                <p class="card-text">Manage and track orders</p>
-                <a href="/orders" class="btn btn-primary">View Orders</a>
-            </div>
+    @* ─── AI insight banner ─────────────────────────────────────────────────
+       --upos-grad-primary, white ink, --upos-shadow-button, 22px 26px, 8px gaps,
+       the ASK THE BRAIN kicker over one quoted sentence. It is the only surface
+       in the product that runs fl-sheen (§8), and it rises with fl-rise.
+
+       §10 rules that AI copy is quoted and shown as a draft, never as fact. Here
+       there is no draft either: no model, no endpoint and no prompt store stands
+       behind this banner, so the kicker says SAMPLE and the note under the quote
+       says it plainly. The sentence is a specimen of the pattern, written by
+       hand. *@
+    @if (_bannerShown)
+    {
+        <aside class="dash__ai">
+            <p class="dash__ai-kicker">ASK THE BRAIN · SAMPLE</p>
+            <p class="dash__ai-quote">
+                &ldquo;Dinner carried 48% of net sales on 40% of the checks. Hold the second closing
+                cook and the week lands on plan.&rdquo;
+            </p>
+            <p class="dash__ai-note">
+                Sample of the pattern, not an insight this build produced. Nothing generated that
+                sentence — there is no model, endpoint or prompt store behind this banner, and the
+                labor figure a sentence like it would rest on has no source (GAP-09).
+            </p>
+        </aside>
+    }
+
+    @* ─── Title row ─────────────────────────────────────────────────────────
+       The heading left, the AI toggle right as a text button. The toggle hides
+       and restores the banner and touches nothing else on the page. *@
+    <header class="dash__title-row">
+        <h1 class="dash__title">Riverside Grill · Today</h1>
+        <button type="button" class="dash__ai-toggle" @onclick="ToggleBanner">
+            @(_bannerShown ? "Hide insight" : "Ask the brain")
+        </button>
+    </header>
+
+    <p class="dash__gap-line">@PeriodLine</p>
+
+    @* ─── KPI strip ─────────────────────────────────────────────────────────
+       repeat(4,1fr) at --upos-space-gap-card, in the handbook's order: net
+       sales, labor, covers, avg ticket. StatCard takes Fill="Panel" — Part II-B
+       puts a block inside the white panel on --upos-surface-inset with no
+       shadow. *@
+    <div class="dash__strip">
+
+        <StatCard Fill="SurfaceFill.Panel" Label="NET SALES" Value="@Money(_data.NetSales)">
+            <Comparison>@Checks(_data.OrderCount) · no prior window to compare</Comparison>
+        </StatCard>
+
+        @* LABOR % — GAP-09. In position, quiet, with no invented figure: a
+           number here would be the one thing this screen must not do. *@
+        <div class="dash__tile">
+            <span class="dash__tile-label">LABOR %</span>
+            <p class="dash__tile-what">
+                Labor cost as a share of net sales, against the period's target.
+            </p>
+            <p class="dash__tile-needs">
+                Needs an employee, role and shift model with wages to cost against the hours worked.
+                The POC has none of it (GAP-09).
+            </p>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Menu</h5>
-                <p class="card-text">Manage menu items</p>
-                <a href="/menu" class="btn btn-primary">View Menu</a>
-            </div>
+
+        @* COVERS — GAP-07. *@
+        <div class="dash__tile">
+            <span class="dash__tile-label">COVERS</span>
+            <p class="dash__tile-what">
+                Guests served, and the turns per table behind it.
+            </p>
+            <p class="dash__tile-needs">
+                Needs a guest count on <code>Order</code>. Nothing on the order or its lines records
+                how many people ate (GAP-07).
+            </p>
         </div>
+
+        <StatCard Fill="SurfaceFill.Panel" Label="AVG TICKET" Value="@MoneyCents(_data.AverageTicket)">
+            <Comparison>net sales over @Checks(_data.OrderCount) · no prior window to compare</Comparison>
+        </StatCard>
     </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Tables</h5>
-                <p class="card-text">Manage table layout</p>
-                <a href="#" class="btn btn-secondary disabled">Coming Soon</a>
+
+    @* The design's comparison lines are read-time derivations, and the arrow
+       that opens them states a direction. Neither has a source, so the two live
+       tiles carry a plain count in --upos-ink-subtle and no arrow. *@
+    <p class="dash__gap-line">
+        Every comparison the design draws — <code>12% vs last Tue</code>,
+        <code>target 24%</code>, <code>avg 1.9 turns</code> — is derived at read time against a
+        prior window or a configured target. Nothing stores either (GAP-13).
+    </p>
+
+    @* ─── Charts row · 1.3fr 1fr at 20px ────────────────────────────────── *@
+    <div class="dash__row">
+
+        @* ── Sales by daypart ────────────────────────────────────────────
+           Four columns 22px apart in a 180px band, each a --upos-grad-bar-v
+           fill under its name. Columns scale to the largest slice; the empty
+           day draws no bars (§8, Part II-B). *@
+        <section class="dash__card">
+            <h2 class="dash__card-title">Sales by daypart</h2>
+
+            @if (Largest <= 0m)
+            {
+                <div class="dash__band">
+                    <p class="dash__empty">No sales yet today. The first check sets the baseline.</p>
+                </div>
+                <div class="dash__axis">
+                    @foreach (var slice in _data.Dayparts)
+                    {
+                        <span class="dash__col-label">@slice.Name</span>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="dash__band">
+                    @foreach (var slice in _data.Dayparts)
+                    {
+                        <div class="dash__col">
+                            <span class="dash__col-value">@Money(slice.Sales)</span>
+                            <div class="dash__col-track">
+                                @if (slice.Sales > 0m)
+                                {
+                                    <div class="dash__col-bar" style="height:@BarHeight(slice.Sales)"></div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="dash__axis">
+                    @foreach (var slice in _data.Dayparts)
+                    {
+                        <span class="dash__col-label">@slice.Name</span>
+                    }
+                </div>
+            }
+        </section>
+
+        @* ── Top items, and the exception row under it ───────────────────── *@
+        <section class="dash__card">
+            <h2 class="dash__card-title">Top items</h2>
+
+            @if (TopItems.Count == 0)
+            {
+                <p class="dash__empty">No sales yet today. The first check sets the baseline.</p>
+            }
+            else
+            {
+                <ul class="dash__items">
+                    @foreach (var item in TopItems)
+                    {
+                        <li class="dash__item">
+                            <span class="dash__item-name">@item.Name</span>
+                            <span class="dash__item-meta">
+                                @item.QuantitySold.ToString("#,##0", CultureInfo.InvariantCulture) ·
+                                @Money(item.Sales)
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            @* The exception row — GAP-08. The design draws it in
+               --upos-status-late-text with a count and a trailing arrow; a comp
+               has no record here, so there is no count to color and nothing for
+               the arrow to reach. It renders blocked and quiet instead: late-red
+               on an exception that does not exist would be an alarm about
+               nothing (§4). *@
+            <div class="dash__exception">
+                <p class="dash__tile-what">Comps flagged for review, with the row leading to them.</p>
+                <p class="dash__tile-needs">
+                    Needs a payments domain where a comp is a record against a line.
+                    <code>OrderStatus.Cancelled</code> voids a whole order, not the three lines this
+                    row counts (GAP-08).
+                </p>
             </div>
-        </div>
+        </section>
     </div>
-</div>
+</section>
+
+@code {
+    private DashboardDto _data = new();
+    private bool _loading = true;
+    private bool _isLive;
+
+    /// <summary>The banner is up on arrival; the toggle is the only thing that moves it.</summary>
+    private bool _bannerShown = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // One read, then IsLive — read after awaiting the call whose figures are on
+        // screen, which is the only point at which it describes them.
+        _data = await Dashboard.GetAsync();
+        _isLive = Dashboard.IsLive;
+        _loading = false;
+    }
+
+    private void ToggleBanner() => _bannerShown = !_bannerShown;
+
+    /// <summary>Highest-selling first. The DTO already orders them, and the page is
+    /// handed a fresh copy, so sorting here costs nothing and does not depend on it.</summary>
+    private IReadOnlyList<TopItemDto> TopItems => _data.TopItems
+        .OrderByDescending(t => t.Sales)
+        .ToList();
+
+    /// <summary>The tallest slice, and the only divisor the chart uses. Zero on an
+    /// empty day and on a day whose every slice is zero — both draw no bars rather
+    /// than dividing by it.</summary>
+    private decimal Largest => _data.Dayparts.Count == 0
+        ? 0m
+        : _data.Dayparts.Max(d => d.Sales);
+
+    /// <summary>A slice as a share of the tallest. Only called where
+    /// <see cref="Largest"/> is positive and the slice is positive, so the division is
+    /// guarded twice; the CSS floors a hairline slice at 4px so it stays visible
+    /// without being drawn taller than it is.</summary>
+    private string BarHeight(decimal sales) =>
+        (sales / Largest * 100m).ToString("0.##", CultureInfo.InvariantCulture) + "%";
+
+    /// <summary>The window the figures cover, and why it is the window it is. The API
+    /// defaults to the UTC day because a business day needs a venue to hang off, and
+    /// the venue in the heading is a literal for the same reason (GAP-13).</summary>
+    private string PeriodLine =>
+        $"{_data.From:d MMM yyyy} · UTC midnight to midnight. The business day and the venue name " +
+        "have nowhere to be configured, so both are stand-ins (GAP-13).";
+
+    /// <summary>Money whole-dollar and comma-grouped (§6). Archivo 800 rather than
+    /// mono, and tabular in the stylesheet so a column of it aligns.</summary>
+    private static string Money(decimal value) =>
+        "$" + value.ToString("#,##0", CultureInfo.InvariantCulture);
+
+    /// <summary>The average ticket keeps its cents — it is the one figure here small
+    /// enough for them to carry information.</summary>
+    private static string MoneyCents(decimal value) =>
+        "$" + value.ToString("#,##0.00", CultureInfo.InvariantCulture);
+
+    private static string Checks(int count) =>
+        count == 1 ? "1 check" : count.ToString("#,##0", CultureInfo.InvariantCulture) + " checks";
+}

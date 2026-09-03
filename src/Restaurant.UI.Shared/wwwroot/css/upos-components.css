@@ -1,0 +1,180 @@
+/* UPOS Fusion Fluid — component recipes. Consumes the --upos-* tokens defined in
+   docs/design/tokens/upos-tokens.css; no new tokens are introduced here. Style
+   rules honored throughout (vendored readme, "Hover, press, focus" / "Elevation" /
+   "Shape" / "Transparency and blur"): buttons lift translateY(-2px) on hover,
+   cards -4px, rows -3px, nav/list items slide translateX(3px) — all of it inside
+   the single @media (hover:hover) block at the foot of this file, so touch
+   surfaces never receive it; no borders-as-elevation except .u-data-row
+   (status-colored border, no shadow at rest); the scrim is --upos-scrim plus a
+   blur; the segmented track is --upos-surface-veil on a pill; chips, pills and
+   controls are radius 999px; no square corners outside the .upos-kds scope. */
+
+/* Buttons */
+.u-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:var(--upos-touch-terminal); padding:0 20px; border:none; cursor:pointer;
+  border-radius:var(--upos-radius-inset); font:700 13px/1 Archivo,system-ui,sans-serif;
+  transition:transform var(--upos-dur-fast) var(--upos-ease), box-shadow var(--upos-dur-fast) var(--upos-ease); }
+.u-btn--primary { background:var(--upos-grad-primary); color:#fff; box-shadow:var(--upos-shadow-button); font-weight:800; }
+.u-btn--secondary { background:var(--upos-surface); color:var(--upos-ink); border:1px solid var(--upos-border); }
+.u-btn--ghost { background:transparent; color:var(--upos-ink-subtle); }
+
+/* Icon button — 34px per the vendored --icon-btn dimension (not transcribed as a
+   token; literal px per controller decision). Circular, unlike .u-btn's inset radius. */
+.u-icon-btn { display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px; border:none; border-radius:var(--upos-radius-pill);
+  background:var(--upos-surface); color:var(--upos-ink-subtle); cursor:pointer;
+  box-shadow:var(--upos-shadow-card); font:700 15px/1 Archivo,system-ui,sans-serif;
+  transition:transform var(--upos-dur-fast) var(--upos-ease), color var(--upos-dur-fast) var(--upos-ease); }
+
+/* Generic pill (tags, categories) */
+.u-pill { display:inline-flex; align-items:center; gap:6px; padding:6px 14px;
+  border-radius:var(--upos-radius-pill); background:var(--upos-surface-inset);
+  color:var(--upos-ink-subtle); font:700 11px/1 Archivo,system-ui,sans-serif; }
+
+/* Status chips */
+.u-chip-status { display:inline-flex; align-items:center; gap:6px; padding:5px 12px;
+  border-radius:var(--upos-radius-pill); color:#fff;
+  font:700 10.5px/1 Archivo,system-ui,sans-serif; letter-spacing:.03em; text-transform:uppercase; }
+.u-chip-status--new   { background:var(--upos-status-new); }
+.u-chip-status--fired { background:var(--upos-status-fired); }
+.u-chip-status--late  { background:var(--upos-status-late); }
+.u-chip-status--ready { background:var(--upos-status-ready); }
+
+/* Allergen chip — sized like a status chip, violet family */
+.u-chip-allergen { display:inline-flex; align-items:center; gap:6px; padding:5px 12px;
+  border-radius:var(--upos-radius-pill); background:var(--upos-allergen-bg); color:var(--upos-allergen-text);
+  font:700 10.5px/1 Archivo,system-ui,sans-serif; letter-spacing:.03em; text-transform:uppercase; }
+
+/* Channel badge (order source: dine-in, DoorDash, online, ...) */
+.u-badge-channel { display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+  border-radius:var(--upos-radius-pill); background:var(--upos-surface-inset); color:var(--upos-ink-subtle);
+  font:700 10px/1 Archivo,system-ui,sans-serif; letter-spacing:.04em; text-transform:uppercase; }
+
+/* Offline pill */
+.u-pill-offline { display:inline-flex; align-items:center; gap:6px; padding:6px 12px;
+  border-radius:var(--upos-radius-pill); background:var(--upos-status-late); color:#fff;
+  font:800 11px/1 Archivo,system-ui,sans-serif; letter-spacing:.05em; }
+
+/* Segmented control — the translucent veil on a pill, per "Transparency and blur".
+   --upos-surface-veil moves with the theme; a literal rgba(255,255,255,.75) here
+   would leave an inactive option at 1.78:1 on a dark board.
+   An inactive option is a tappable choice, not a disabled control, so it owes
+   AA: --upos-ink at .66 rather than --upos-ink-subtle, which is the opacity step
+   handbook §3 and §12 prescribe between the kit's two ink tokens. Shipped
+   5.3:1 in light and 6.3:1 in dark, against --upos-ink-subtle's 3.0:1 and
+   4.61:1. The active option is unchanged: full --upos-ink on --upos-surface. */
+.u-segmented { display:inline-flex; gap:4px; padding:4px; border-radius:var(--upos-radius-pill);
+  background:var(--upos-surface-veil); box-shadow:var(--upos-shadow-card); }
+.u-segmented__opt { display:inline-flex; align-items:center; justify-content:center; padding:7px 16px;
+  border:none; border-radius:var(--upos-radius-pill); background:transparent; color:var(--upos-ink); opacity:.66;
+  font:700 12px/1 Archivo,system-ui,sans-serif; cursor:pointer;
+  transition:background var(--upos-dur-fast) var(--upos-ease), opacity var(--upos-dur-fast) var(--upos-ease); }
+.u-segmented__opt.is-active { background:var(--upos-surface); opacity:1; box-shadow:var(--upos-shadow-card); }
+
+/* Switch — the segmented control's two-state cousin, for a setting rather than a
+   view. 50x28 track carrying a 22px knob that slides 3px -> 25px; the knob is
+   inset and pill-radius, so no overflow clip is needed. */
+.u-switch { position:relative; display:inline-block; width:50px; height:28px; padding:0; border:none;
+  border-radius:var(--upos-radius-pill); background:var(--upos-border); cursor:pointer;
+  transition:background var(--upos-dur-fast) var(--upos-ease); }
+.u-switch::after { content:""; position:absolute; top:3px; left:3px; width:22px; height:22px;
+  border-radius:var(--upos-radius-pill); background:#fff; box-shadow:var(--upos-shadow-card);
+  transition:transform var(--upos-dur-fast) var(--upos-ease); }
+.u-switch.is-on { background:var(--upos-grad-primary); }
+.u-switch.is-on::after { transform:translateX(22px); }
+
+/* Stat card — shadow + radius, no border; lifts -4px like any card */
+.u-stat-card { display:flex; flex-direction:column; gap:6px; padding:20px 22px;
+  border-radius:var(--upos-radius-card); background:var(--upos-surface); box-shadow:var(--upos-shadow-card);
+  transition:transform var(--upos-dur-fast) var(--upos-ease); }
+
+/* Data row — the one exception to "no borders-as-elevation": white fill + 1px
+   status-colored border, no shadow at rest. Lifts -3px and picks up a shadow on
+   hover. .is-late is a minimal modifier for the status-colored border demo. */
+.u-data-row { display:flex; align-items:center; gap:14px; padding:12px 16px;
+  border-radius:var(--upos-radius-inset); background:var(--upos-surface);
+  border:1px solid var(--upos-border);
+  transition:transform var(--upos-dur-fast) var(--upos-ease); }
+.u-data-row.is-late { border-color:var(--upos-status-late); }
+
+/* Modal + scrim — rendered statically inside a position:relative demo container */
+.u-modal { width:360px; max-width:100%; padding:24px 24px 22px; border-radius:var(--upos-radius-panel);
+  background:var(--upos-surface); box-shadow:var(--upos-shadow-modal);
+  display:flex; flex-direction:column; gap:14px;
+  animation:fl-rise var(--upos-dur-slow) var(--upos-ease); }
+.u-scrim { position:absolute; inset:0; border-radius:var(--upos-radius-panel);
+  background:var(--upos-scrim);
+  backdrop-filter:blur(var(--upos-blur-scrim)); -webkit-backdrop-filter:blur(var(--upos-blur-scrim)); }
+
+/* Drawer — floats inset within its demo container so all four corners stay
+   rounded (no square corners anywhere outside .upos-kds) */
+.u-drawer { position:absolute; top:16px; right:16px; bottom:16px; width:300px; max-width:80%;
+  padding:24px 22px; border-radius:var(--upos-radius-panel);
+  background:var(--upos-surface); box-shadow:var(--upos-shadow-modal);
+  display:flex; flex-direction:column; gap:14px;
+  animation:fl-rise var(--upos-dur-slow) var(--upos-ease); }
+
+/* Toast — dark chrome regardless of theme, closest available elevation token */
+.u-toast { display:inline-flex; align-items:center; gap:10px; padding:14px 18px;
+  border-radius:var(--upos-radius-inset); background:var(--upos-panel-dark); color:#fff;
+  box-shadow:var(--upos-shadow-modal); font:700 12.5px/1.3 Archivo,system-ui,sans-serif;
+  animation:fl-rise var(--upos-dur-fast) var(--upos-ease); }
+
+/* Nav item + bottom nav — floating pill strip; items slide translateX(3px) */
+.u-nav-bottom { display:flex; align-items:center; justify-content:space-around; gap:4px;
+  padding:10px 14px; border-radius:var(--upos-radius-pill);
+  background:var(--upos-surface); box-shadow:var(--upos-shadow-card); }
+.u-nav-item { display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 10px;
+  border-radius:var(--upos-radius-inset); color:var(--upos-ink-subtle); cursor:pointer;
+  font:700 10px/1 Archivo,system-ui,sans-serif;
+  transition:transform var(--upos-dur-fast) var(--upos-ease), color var(--upos-dur-fast) var(--upos-ease); }
+.u-nav-item.is-active { color:var(--upos-accent); }
+
+/* Tender tile — payment method selector; selected state recolors with the accent */
+.u-tender-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  min-height:var(--upos-touch-terminal); padding:18px 14px; border-radius:var(--upos-radius-card);
+  background:var(--upos-surface); box-shadow:var(--upos-shadow-card); color:var(--upos-ink); cursor:pointer;
+  font:700 13px/1.2 Archivo,system-ui,sans-serif;
+  transition:transform var(--upos-dur-fast) var(--upos-ease), box-shadow var(--upos-dur-fast) var(--upos-ease); }
+.u-tender-tile.is-selected { background:var(--upos-grad-primary); color:#fff; box-shadow:var(--upos-shadow-button); }
+
+/* Tip button */
+.u-tip-btn { display:inline-flex; align-items:center; justify-content:center; min-width:64px;
+  min-height:var(--upos-touch-terminal); padding:0 18px; border:1px solid var(--upos-border);
+  border-radius:var(--upos-radius-pill); background:var(--upos-surface); color:var(--upos-ink);
+  font:700 14px/1 Archivo,system-ui,sans-serif; cursor:pointer;
+  transition:transform var(--upos-dur-fast) var(--upos-ease), background var(--upos-dur-fast) var(--upos-ease); }
+.u-tip-btn.is-selected { background:var(--upos-grad-primary); color:#fff; border-color:transparent; box-shadow:var(--upos-shadow-button); }
+
+/* Qty stepper — [- qty +] compound control; children are plain elements */
+.u-qty-stepper { display:inline-flex; align-items:center; border-radius:var(--upos-radius-pill);
+  background:var(--upos-surface-inset); overflow:hidden; }
+.u-qty-stepper button { display:inline-flex; align-items:center; justify-content:center;
+  min-width:var(--upos-touch-terminal); min-height:var(--upos-touch-terminal);
+  border:none; background:transparent; color:var(--upos-ink); font:800 15px/1 Archivo,system-ui,sans-serif; cursor:pointer;
+  transition:background var(--upos-dur-fast) var(--upos-ease); }
+.u-qty-stepper span { min-width:24px; text-align:center; font:700 13px/1 Archivo,system-ui,sans-serif; }
+
+/* KDS chit — scoped inside .upos-kds; the one place square-ish corners are allowed */
+.u-chit { width:280px; border-radius:10px; background:var(--upos-kds-inset);
+  color:var(--upos-kds-ink); display:flex; flex-direction:column; overflow:hidden; }
+.u-chit__timer { font:var(--upos-type-mono); }
+.u-chit__timer--late { color:var(--upos-kds-status-late); }
+
+/* Hover — pointer surfaces only. Every :hover rule in the kit is declared inside
+   this one guard, so Restaurant.Mobile, the kitchen board and the kiosk (all
+   hover:none) never receive a lift and no host has to retract anything. Press
+   feedback on those surfaces is the ripple tint set at the call site (handbook
+   §8, Part III). Order inside the block matches the recipes above; the modal
+   close rotates instead of lifting, so it follows .u-icon-btn. */
+@media (hover:hover) {
+  .u-btn:hover { transform:translateY(-2px); }
+  .u-icon-btn:hover { transform:translateY(-2px); color:var(--upos-ink); }
+  .u-modal .u-icon-btn:hover { transform:rotate(90deg); }
+  .u-stat-card:hover { transform:translateY(-4px); }
+  .u-data-row:hover { transform:translateY(-3px); box-shadow:var(--upos-shadow-card); }
+  .u-nav-item:hover { transform:translateX(3px); color:var(--upos-ink); }
+  .u-tender-tile:hover { transform:translateY(-4px); }
+  .u-tip-btn:hover { transform:translateY(-2px); }
+  .u-qty-stepper button:hover { background:var(--upos-surface-hover); }
+}

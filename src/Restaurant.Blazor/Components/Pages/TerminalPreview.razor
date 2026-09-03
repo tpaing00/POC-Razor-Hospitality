@@ -1,0 +1,214 @@
+﻿@page "/preview/terminal"
+
+@* A development preview of a MAUI screen, not a back-office destination.
+
+   The terminal is Restaurant.Mobile — Razor in an Android WebView. The same
+   components render in a desktop browser, so this route stands them up at the
+   artboard's 1440×900 and lets the screen be seen and iterated without an
+   emulator on the machine. Nothing here is part of the product: the back office
+   has no terminal, and this page never ships to a venue.
+
+   Two things the preview must not lie about, because a desktop browser is not
+   the device:
+
+   · Hover. The kit declares every :hover rule inside one @@media (hover:hover)
+     guard, so a pointer surface gets the lift and the Android terminal never
+     does. That guard is correct and this browser satisfies it, which means the
+     preview would show a lift the device cannot produce. The frame below
+     retracts it, so what you see is what the terminal does: no transform, and
+     press feedback as the ripple tint (§8).
+   · Size. The frame is a fixed box at whichever device the switcher is set to,
+     and it does not scale to the window. A scaled preview reads as a smaller
+     terminal and hides how much a 190px tile actually is; scroll the frame
+     instead. The switcher changes the box, never the zoom.
+
+   The screen's own data behaves exactly as it does on the device: MenuDataSource
+   reads the API and falls back to seed data when it cannot be reached, and says
+   which of the two is on screen. *@
+
+<PageTitle>Terminal preview</PageTitle>
+
+<section class="panel tp">
+
+    <header class="tp__head">
+        <p class="tp__kicker">DEVELOPMENT PREVIEW &middot; MAUI SCREEN</p>
+        <h1 class="tp__title">Terminal &middot; Order entry</h1>
+        <p class="tp__note">
+            The same <code>TerminalShell</code> and <code>OrderEntryScreen</code> components
+            <code>Restaurant.Mobile</code> renders, stood up at the terminal's 1440&times;900 &mdash;
+            or at any of the candidate form factors &mdash; so the screen can be worked on without
+            an emulator or the hardware. This route is not a back-office destination and ships to no
+            venue. Hover lifts are retracted inside the frame, because the terminal has no hover.
+        </p>
+    </header>
+
+    @* ─── The device-size switcher ────────────────────────────────────────────
+       Development tooling. It has no handbook specification and no product
+       counterpart: nothing in Part II owns a size picker, and this one exists
+       only because a large-tablet form factor has to be worked on without the
+       hardware in the room. It still spends the kit — every colour, radius,
+       type and spacing value below is a token — because a dev tool drawn in
+       stray hex is a second palette on the same page.
+
+       It changes one thing: the width and height of the box the shell stands
+       in. It does not scale, zoom, or restyle anything inside that box, so the
+       shell lays out at each size exactly as it would on a panel of that size.
+       That works because Part II-A's handheld step is a container query on the
+       shell's own inline size (`@@container upos-shell (max-width: 800px)`),
+       not a viewport media query — resizing this frame exercises the same rule
+       the device does, and the browser window is irrelevant to it.
+
+       The branch readout under the frame is a mirror of that condition, not a
+       readout of it: the badge sits outside the shell, so it cannot query the
+       shell's container, and .tp__stage declares a container of its own at the
+       same 800px threshold and exactly the shell's width. The two are kept
+       honest by the fact that the stage is the shell's parent box — same width,
+       same condition, same answer.
+
+       The 800px step is an edge and the switcher shows it as one. The 10.1"
+       tablet in portrait is 800px wide, the condition is `max-width: 800px`,
+       and `max-width` is inclusive — so 800 lands on the HANDHELD side, and a
+       tablet gets the degraded single-column phone layout. That is what the
+       rule as written does; the presets say so rather than nudging the number. *@
+
+    <div class="tp__tool">
+        <div class="tp__tool-head">
+            <p class="tp__tool-kicker">DEV TOOL &middot; NOT PRODUCT UI &middot; UNSPECIFIED</p>
+            <p class="tp__tool-note">
+                Resizes the frame below and nothing else &mdash; no scaling, no restyling. The
+                handheld step is a container query on the shell&rsquo;s own width, so the shell
+                lays out here as it would on a panel this size. The fixed 393&times;785 frame
+                further down stays where it is, so two shells at two widths are still on the
+                page at once.
+            </p>
+        </div>
+
+        <div class="tp__sizes" role="group" aria-label="Device size">
+            @foreach (var preset in Presets)
+            {
+                <button type="button"
+                        class="tp__size @(preset == _active ? "tp__size--on" : null)"
+                        aria-pressed="@(preset == _active)"
+                        @onclick="() => _active = preset">
+                    <span class="tp__size-name">@preset.Name</span>
+                    <span class="tp__size-dim">@preset.Width &times; @preset.Height</span>
+                </button>
+            }
+        </div>
+    </div>
+
+    <p class="tp__kicker">
+        @_active.Name &middot; @_active.Width &times; @_active.Height &middot; @_active.Provenance
+    </p>
+
+    <div class="tp__frame">
+        <div class="tp__stage" style="width:@(_active.Width)px">
+            <div class="tp__device" style="height:@(_active.Height)px">
+                <TerminalShell ActiveDestination="order">
+                    <OrderEntryScreen CustomerName="Mobile User" TableId="1" />
+                </TerminalShell>
+            </div>
+
+            @* Which branch the shell is actually in, stated in the shell's own
+               terms. Both spans are in the markup and the container query hides
+               one, so the text is selectable and greppable rather than living
+               in a CSS content string. *@
+            <p class="tp__branch">
+                <span class="tp__branch-line tp__branch-line--wide">
+                    <span class="tp__branch-tag tp__branch-tag--wide">WIDE</span>
+                    <code>@@container upos-shell (max-width: 800px)</code> does not match at
+                    @(_active.Width)px &mdash; the full three-pane order entry.
+                </span>
+                <span class="tp__branch-line tp__branch-line--handheld">
+                    <span class="tp__branch-tag tp__branch-tag--handheld">HANDHELD</span>
+                    <code>@@container upos-shell (max-width: 800px)</code> matches at
+                    @(_active.Width)px &mdash; the provisional degraded single column.
+                    @if (_active.Width == 800)
+                    {
+                        <strong>
+                            800 is the step itself, and <code>max-width</code> is inclusive, so a
+                            tablet this wide gets the phone layout.
+                        </strong>
+                    }
+                </span>
+            </p>
+        </div>
+    </div>
+
+    @* The handheld step, stood up beside the design it degrades from.
+
+       Both frames are on this page at once and both are correct at once, which
+       is the whole reason the step is a container query on the shell rather
+       than a media query on the viewport: the rule asks how wide the shell is,
+       and these two shells are 1440px and 393px in the same browser window. A
+       viewport rule would flip both frames together the moment the window
+       narrowed, and would report the opposite of the truth about the device.
+
+       393x785 is what the Datalogic Memor 20's WebView reports for its
+       1080x2160 screen at 440dpi, now that MainActivity hides both of Android's
+       system bars: the terminal owns the whole panel, so the WebView is the
+       whole panel. The number has moved twice. It read 393x785 while the window
+       drew edge to edge underneath the bars, and that 785 was a defect — the
+       shell was measuring 72px of chrome it did not own and was clipped at both
+       ends. It read 393x713 while the window was fitted to them — 2160 less a
+       66px status bar and a 132px navigation bar is 1962 device pixels, which is
+       713 CSS pixels — which was correct for a terminal that shares its screen
+       with the host. It reads 393x785 again now, the same figure as the defect,
+       reached by removing the bars rather than by ignoring them. It is a real
+       measurement off a real device at every step, not a chosen number — and
+       Part II-A · Handheld is provisional for exactly that reason: the device is
+       one candidate and the fleet is not settled. *@
+    <p class="tp__kicker">393 &times; 785 &middot; handheld &middot; provisional</p>
+
+    <div class="tp__frame tp__frame--handheld">
+        <div class="tp__device tp__device--handheld">
+            <TerminalShell ActiveDestination="order">
+                <OrderEntryScreen CustomerName="Mobile User" TableId="1" />
+            </TerminalShell>
+        </div>
+    </div>
+</section>
+
+@code {
+    /// <summary>
+    /// One box the shell can be stood in. <c>Provenance</c> is where the two numbers came
+    /// from, and it is part of the preset rather than a comment because a size nobody can
+    /// trace is a size somebody invented.
+    /// </summary>
+    private sealed record DevicePreset(string Name, string Provenance, int Width, int Height);
+
+    /// The candidate fleet, narrowest first. Part II-A's Handheld preamble names three
+    /// candidates — "the counter unit, the 10.1" handheld and this 5.7" device" — and the
+    /// surfaces table names the terminal's own target. Exactly one of these figures has been
+    /// off a real device; the rest are the panel classes, and each one says which it is.
+    private static readonly DevicePreset[] Presets =
+    [
+        // The only measured pair on the list. The Datalogic Memor 20's WebView reports
+        // 393x785 CSS px for its 1080x2160 panel at 440dpi, with both Android system bars
+        // hidden. Part II-A · Handheld records the measurement and the two figures it
+        // replaced.
+        new("Handheld · 5.7\"", "Datalogic Memor 20 · measured on the device", 393, 785),
+
+        // A 10.1" Android tablet is 1280x800 CSS px whichever panel it ships: a 1920x1200
+        // screen is ~224ppi, which Android buckets to hdpi and a dpr of 1.5, and a 1280x800
+        // screen is ~149ppi, which is mdpi and a dpr of 1. Both land on the same viewport.
+        // Portrait is that pair rotated — and 800 is the step, which is why this preset is
+        // the one the branch readout has something extra to say about.
+        new("10.1\" tablet · portrait", "1280×800 CSS class, rotated · panel class", 800, 1280),
+        new("10.1\" tablet · landscape", "1920×1200 at dpr 1.5 · panel class", 1280, 800),
+
+        // The spec. "1440×900 is the terminal", Part II-A's preamble, and the surfaces
+        // table's "1440×900 tablet, landscape". Every artboard is drawn here.
+        new("Terminal · spec", "Part II-A · the primary design", 1440, 900),
+
+        // The counter unit is a candidate with no stated resolution anywhere in the
+        // handbook, so this pair is the class rather than a spec: 15.6" POS units are FHD,
+        // 1920x1080, and at ~141ppi that is mdpi and a dpr of 1, so the panel is the
+        // viewport. Nothing has been on a bench. Treat it as the widest case worth
+        // rehearsing, not as a target.
+        new("Counter unit · 15.6\"", "1920×1080 FHD at dpr 1 · nominal, unverified", 1920, 1080),
+    ];
+
+    /// 1440x900 is the primary design, so the page opens there.
+    private DevicePreset _active = Presets[3];
+}

@@ -1,0 +1,51 @@
+/* The kit gives the row its fill, radius, 1px border, padding, gap and the -3px
+   hover lift. What it does not give is the three-slot geometry (leading, body
+   taking the slack, trailing hard right), the other three status border tones,
+   the selected border, or a focus ring — all of it here, all from tokens. */
+
+.u-data-row__leading,
+.u-data-row__trailing {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--upos-space-gap-chip);
+    flex: none;
+}
+
+.u-data-row__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font: var(--upos-type-row);
+    color: var(--upos-ink);
+}
+
+/* One of §4's five named places where status shows: the 1px border. The kit
+   ships .is-late only. */
+.u-data-row--new {
+    border-color: var(--upos-status-new);
+}
+
+.u-data-row--fired {
+    border-color: var(--upos-status-fired);
+}
+
+.u-data-row--ready {
+    border-color: var(--upos-status-ready);
+}
+
+/* Selected, where a list drives a detail pane. */
+.u-data-row.is-selected {
+    border-color: var(--upos-accent);
+    box-shadow: var(--upos-shadow-card);
+}
+
+.u-data-row--interactive {
+    cursor: pointer;
+}
+
+.u-data-row--interactive:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}

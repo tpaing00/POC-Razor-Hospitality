@@ -1,23 +1,24 @@
-﻿@using Restaurant.Shared.Models
+@using Restaurant.Shared.Models
+@using Restaurant.UI.Shared.Components.Upos
 
-<span class="badge @GetBadgeClass()">@Status.ToString()</span>
+@* Handbook Part III · OrderStatusBadge.
+   Classes: .u-chip-status and its four modifiers, through StatusChip.
+   Props:   Status (OrderStatus).
+   States:  one per OrderStatus, mapped through §4 — Pending PENDING and
+            Confirmed SENT in new-blue, Preparing FIRED in fired-orange, Ready
+            READY, Served SERVED and Completed PAID in ready-green, Cancelled
+            VOID in late-red.
+   Notes:   the POC badge was a Bootstrap `badge bg-*`; the restyle points it at
+            the kit chip and nothing else changes, so existing call sites keep
+            compiling. It is a one-parameter wrapper over StatusChip — no late
+            derivation and no label override, because an OrderStatus is all it is
+            given. A screen that needs either uses StatusChip directly. *@
+
+<StatusChip Status="@Status" @attributes="AdditionalAttributes" />
 
 @code {
-    [Parameter]
-    public OrderStatus Status { get; set; }
+    [Parameter] public OrderStatus Status { get; set; }
 
-    private string GetBadgeClass()
-    {
-        return Status switch
-        {
-            OrderStatus.Pending => "bg-warning",
-            OrderStatus.Confirmed => "bg-info",
-            OrderStatus.Preparing => "bg-primary",
-            OrderStatus.Ready => "bg-success",
-            OrderStatus.Served => "bg-success",
-            OrderStatus.Completed => "bg-secondary",
-            OrderStatus.Cancelled => "bg-danger",
-            _ => "bg-secondary"
-        };
-    }
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 }

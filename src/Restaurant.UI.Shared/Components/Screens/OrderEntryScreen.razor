@@ -1,0 +1,558 @@
+@namespace Restaurant.UI.Shared.Components.Screens
+@using System.Globalization
+@using Restaurant.Shared.Models.Dtos
+@using Restaurant.UI.Shared.Components.Upos
+@using Restaurant.UI.Shared.Services
+@implements IDisposable
+@inject MenuDataSource Menu
+@inject RestaurantApiService Api
+
+@* Handbook Part II-A · Order entry. "You build a check here — pick a category,
+   tap items, adjust the lines, send them to the kitchen and charge." Three
+   bands inside the shell: a 170px category rail, the item grid, and a 380px
+   cart panel.
+
+   This screen is the destination only. The 76px top bar and the 78px bottom nav
+   belong to TerminalShell, because every terminal destination inherits them.
+
+   What is built here rests on fields the POC actually has — MenuItem's name,
+   price, category and availability, and CreateOrderDto's one order of
+   OrderItemDto lines. What rests on a model the POC does not have is rendered
+   in its designed position as a blocked panel naming its gap, on
+   --upos-surface-inset in --upos-ink-subtle, never as an error: the Menu
+   manager's treatment, and the reason is the same one. A reader has to be able
+   to see both what the screen becomes and what stands between here and there.
+
+   Blocked, in position, in reading order:
+
+   · ITEM INFO mode (GAP-06) — arming it opens the Item info modal, which is an
+     ingredient list, a plating photo and a stack. No recipe, ingredient or
+     plating model exists, so the pill is inert rather than arming a mode with
+     an empty modal behind it.
+   · the Modifier modal and combos (GAP-01, GAP-02) — a tap adds the item
+     straight to the check, which is exactly right for an item carrying no
+     modifiers, and is stated under the grid rather than left to look like the
+     modal was forgotten.
+   · allergen chips on the tile and the line (GAP-05).
+   · the order's channel in the check header (GAP-04).
+   · per-line send to the kitchen — no endpoint sends one line; the POC posts a
+     whole order, which is what SEND ALL does.
+   · tax, and the Charge action (GAP-08).
+   · the offline pill and its queue (GAP-10), which live in the shell.
+   · the loyalty control (GAP-12).
+
+   The 86'd state is not blocked: MenuItem.IsAvailable is real, so an 86'd tile
+   renders per §4 — opacity .5, the name struck, the price replaced by the red
+   86'D pill, no response to a tap, and its place in the grid kept.
+
+   Part II-A · Handheld, provisional. Below 800px of shell width the three panes
+   cannot be drawn — 170 + 380 + 44 + 190 is 784px before one item is on the
+   glass — so the rail becomes a chip row, the grid becomes one column in the
+   ListRow form, and the cart collapses behind a summary bar that opens it as a
+   bottom sheet. The whole of it is in OrderEntryScreen.razor.css behind one
+   @@container query on the shell. Nothing in this file asks how wide anything
+   is: the markup below is identical at both widths but for the summary bar, the
+   scrim and the sheet's close control, which are in the DOM at every width and
+   display:none above the step. _cartOpen is the sheet's own state, not a device
+   check — at 1440 nothing can set it, because the control that sets it is not
+   rendered visible there. *@
+
+<div class="oe">
+
+    @* ─── Category rail, 170px ─────────────────────────────────────────────
+       One button per distinct MenuItem.Category. There is no category entity —
+       the rail is a projection of a flat string, the same one the Menu
+       manager's rail reads. Exactly one is always selected. *@
+    <nav class="oe__rail" aria-label="Categories">
+        @foreach (var category in Categories)
+        {
+            var isSelected = string.Equals(category, _category, StringComparison.OrdinalIgnoreCase);
+            <button type="button"
+                    class="oe__cat @(isSelected ? "is-selected" : null)"
+                    aria-current="@(isSelected ? "true" : null)"
+                    @onclick="() => SelectCategory(category)">@category</button>
+        }
+
+        @if (Categories.Count == 0 && !_loading)
+        {
+            <p class="oe__rail-empty">No categories. The menu has no items to group.</p>
+        }
+    </nav>
+
+    @* ─── Item grid ────────────────────────────────────────────────────────*@
+    <section class="oe__menu">
+
+        <header class="oe__menu-head">
+            @if (_loading)
+            {
+                <p class="oe__notice">Loading the menu.</p>
+            }
+            else if (!_isLive)
+            {
+                <p class="oe__notice">
+                    Seed data &middot; the menu API is unreachable, so these tiles are a design-time
+                    stand-in and an order built from them has nowhere to go.
+                </p>
+            }
+
+            @* ITEM INFO — GAP-06, in position and inert. *@
+            <span class="oe__blocked-pill"
+                  aria-disabled="true"
+                  title="Item info mode opens the Item info modal — ingredients, a plating photo and a stack. The POC has no recipe, ingredient or plating model (GAP-06).">
+                ITEM INFO &middot; GAP-06
+            </span>
+        </header>
+
+        <div class="oe__grid-scroll">
+            @if (Visible.Count == 0 && !_loading)
+            {
+                <p class="oe__empty">
+                    @(Categories.Count == 0
+                        ? "The menu is empty. Add items in the back office."
+                        : $"Nothing in {_category}.")
+                </p>
+            }
+            else
+            {
+                <div class="oe__grid">
+                    @foreach (var item in Visible)
+                    {
+                        <MenuItemCard Item="item"
+                                      Layout="CardLayout.Tile"
+                                      Scale="TypeScale.Terminal"
+                                      OnTap="AddToOrder" />
+                    }
+                </div>
+            }
+
+            @* The three statements the grid owes a reader. Quiet, under the
+               tiles, in the Menu manager's blocked-panel treatment. *@
+            <div class="oe__blocked">
+                <p class="oe__blocked-what">
+                    Tapping a tile adds the item to the check at quantity 1 and merges a repeat tap
+                    into the matching line. That is the whole of an item with no modifiers, and it is
+                    what every item is today.
+                </p>
+                <p class="oe__blocked-needs">
+                    The Modifier modal — doneness, add-ons with upcharges, sizes — needs
+                    <code>ModifierGroup</code> (name, type, min, max) and <code>ModifierOption</code>
+                    (name, price delta), with an <code>OrderItemModifier</code> join so a build
+                    reaches the kitchen as structure. <code>MenuItem</code> carries none of it, so
+                    no item can say it has choices to resolve (GAP-01). The POC's one per-line
+                    carrier is the free-text <code>OrderItem.SpecialInstructions</code>, which
+                    <code>OrderItemDto</code> does carry end to end — a mods string would reach the
+                    API, as text nothing can price or route.
+                </p>
+                <p class="oe__blocked-needs">
+                    <code>Make it a combo</code>, its side and drink pickers and its
+                    <code>+$3.50</code> need a combo entity with its components and its upcharge.
+                    Nothing models a bundle, so a combo line and its price would be free text
+                    (GAP-02).
+                </p>
+                <p class="oe__blocked-needs">
+                    Allergen chips are violet across the terminal, the kitchen and the kiosk, and
+                    <code>MenuItem</code> has no allergens to fill them with, so the tiles and the
+                    cart lines carry none rather than inventing any (GAP-05).
+                </p>
+            </div>
+        </div>
+    </section>
+
+    @* ─── Cart panel, 380px ────────────────────────────────────────────────
+       Below the handheld step this same element is the bottom sheet, and
+       is-open is what shows it there. Above the step the class is inert: the
+       panel is the third grid column at every value of _cartOpen. *@
+    <aside class="oe__cart @(_cartOpen ? "is-open" : null)" aria-label="Check">
+
+        <header class="oe__cart-head">
+            <div class="oe__check">
+                <span class="oe__check-label">@CheckLabel</span>
+                @* Channel — GAP-04, in position and inert. The artboard reads
+                   "Order #482 · Dine In"; Order has no channel or order type, so
+                   the word would be a literal. *@
+                <span class="oe__blocked-pill"
+                      aria-disabled="true"
+                      title="Dine In, Takeaway and every delivery channel need an order type and channel on Order. The POC has neither (GAP-04).">
+                    CHANNEL &middot; GAP-04
+                </span>
+            </div>
+
+            @* Loyalty — GAP-12, in position and inert. *@
+            <span class="oe__blocked-pill"
+                  aria-disabled="true"
+                  title="Identify guest reads a loyalty account — points, tier, the guest's name. No loyalty entity exists in the POC (GAP-12).">
+                IDENTIFY GUEST &middot; GAP-12
+            </span>
+
+            @* The sheet's close control. Rendered at every width and hidden
+               above the handheld step, where the cart is a panel with nothing
+               to close. *@
+            <span class="oe__sheet-close">
+                <UposIconButton Icon="CloseGlyph"
+                                Label="Close the check"
+                                HitArea="48"
+                                OnClick="CloseCart" />
+            </span>
+        </header>
+
+        <div class="oe__lines">
+            @if (_lines.Count == 0)
+            {
+                <p class="oe__cart-empty">No items yet — tap the menu to build the order.</p>
+            }
+            else
+            {
+                @foreach (var line in _lines)
+                {
+                    @* No OnSend: sending one line has no endpoint, so the line's
+                       send control renders inert rather than doing nothing
+                       quietly. The statement is under the list. *@
+                    <CartLine Item="line"
+                              LineTotal="line.Subtotal"
+                              OnQuantityChange="@(value => SetQuantity(line, value))"
+                              OnRemove="@(() => RemoveLine(line))" />
+                }
+
+                <p class="oe__gap-line">
+                    The send control on each line is inert: no endpoint sends one line, and the POC
+                    writes a whole order. <code>SEND ALL TO KITCHEN</code> below is that write, and
+                    it is real.
+                </p>
+            }
+        </div>
+
+        <footer class="oe__foot">
+
+            <div class="oe__money">
+                <span class="oe__money-label">Subtotal</span>
+                <span class="oe__money-value">@Money(Subtotal)</span>
+            </div>
+
+            @* Tax — GAP-08, in position, with no invented rate. *@
+            <div class="oe__money oe__money--blocked">
+                <span class="oe__money-label">Tax</span>
+                <span class="oe__money-value">No tax rule &middot; GAP-08</span>
+            </div>
+
+            <div class="oe__total">
+                <span class="oe__total-label">Total</span>
+                <span class="oe__total-value">@Money(Subtotal)</span>
+            </div>
+
+            <p class="oe__gap-line">
+                The total is the subtotal. A venue tax rate has nowhere to be configured and no
+                payments domain records what a check settled for, so tax, tender, tip and split all
+                have no field behind them (GAP-08, GAP-13).
+            </p>
+
+            @if (_sendError is not null)
+            {
+                <p class="oe__error">@_sendError</p>
+            }
+            else if (_sentOrder is not null)
+            {
+                <p class="oe__sent-line">Order #@_sentOrder &middot; sent to the kitchen</p>
+            }
+
+            @* SEND ALL is the POC's real write: one CreateOrderDto carrying one
+               OrderItemDto per line, posted to /api/orders. It confirms as SENT
+               TO KITCHEN for 2s, and the check draws its check as an inline SVG
+               rather than a ✓ character (§9). *@
+            <UposButton Variant="ButtonVariant.Secondary"
+                        MinHeight="48"
+                        Disabled="@(_lines.Count == 0 || _sending)"
+                        OnClick="SendAll"
+                        Icon="@(_confirming ? SentCheck : (RenderFragment?)null)"
+                        Label="@SendLabel" />
+
+            @* Charge — GAP-08, in position and inert. Not a disabled primary:
+               a control that looks live and refuses a tap is worse than one that
+               says why it cannot exist. *@
+            <div class="oe__charge"
+                 aria-disabled="true"
+                 title="Charge opens Payment: tender, tip, split and receipt. The POC has no payments domain — status Completed records that a check closed, not how it was paid (GAP-08).">
+                <span class="oe__charge-label">Charge @Money(Subtotal)</span>
+                <span class="oe__charge-note">Payment screen and payments domain &middot; GAP-08</span>
+            </div>
+        </footer>
+    </aside>
+
+    @* ─── Handheld · the scrim under the sheet ─────────────────────────────
+       display:none above the step, so at 1440 this element exists and does
+       nothing. It is rendered rather than conditioned on width because width is
+       not something this component is allowed to know. *@
+    <div class="oe__scrim @(_cartOpen ? "is-open" : null)"
+         aria-hidden="true"
+         @onclick="CloseCart"></div>
+
+    @* ─── Handheld · the summary bar, 64px ─────────────────────────────────
+       Part II-D's bag bar at staff scale, sitting directly above the shell's
+       bottom nav: IN CHECK in the label class, the line count and the running
+       total, and one primary that opens the sheet. It reads IN CHECK rather
+       than IN BAG because a guest has a bag and a server has a check (§10), and
+       Review rather than Charge because Charge lives inside the sheet.
+
+       With an empty check the bar carries the cart's own empty line and no
+       button at all — a live-looking Review over an empty check would be a
+       control that refuses a tap, which §11 rules out. *@
+    <div class="oe__summary">
+        @if (_lines.Count == 0)
+        {
+            <p class="oe__cart-empty">No items yet — tap the menu to build the order.</p>
+        }
+        else
+        {
+            <div class="oe__summary-figures">
+                <span class="oe__summary-kicker">In check</span>
+                <span class="oe__summary-count">@LineCountLabel</span>
+                <span class="oe__summary-total">@Money(Subtotal)</span>
+            </div>
+
+            @* The amount is on the bar, not on the button — Part II-D's
+               division of the same two jobs: the bar reports, the button acts. *@
+            <UposButton Variant="ButtonVariant.Primary"
+                        Label="Review"
+                        OnClick="OpenCart" />
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>The name the order posts under. Tin's terminal posted
+    /// "Mobile User" and nothing on the screen collects a guest name, so the
+    /// literal stays here as a parameter rather than moving into the markup.</summary>
+    [Parameter] public string CustomerName { get; set; } = "Mobile User";
+
+    /// <summary>The table the check belongs to. The floor plan is not built in
+    /// this pass, so no screen picks one; 1 is the value the POC terminal has
+    /// always posted.</summary>
+    [Parameter] public int? TableId { get; set; } = 1;
+
+    private List<MenuItemDto> _items = new();
+    private readonly List<OrderItemDto> _lines = new();
+
+    private bool _loading = true;
+    private bool _isLive;
+    private bool _sending;
+    private bool _confirming;
+    private string? _sendError;
+    private int? _sentOrder;
+    private string _category = string.Empty;
+
+    /// <summary>
+    /// Whether the check is open as a sheet. This is the sheet's own state and not
+    /// a device or width check: above the handheld step the cart is the third grid
+    /// column whatever this holds, and the only control that sets it — the summary
+    /// bar's Review — is display:none up there, so nothing can set it at 1440.
+    /// </summary>
+    private bool _cartOpen;
+
+    private Timer? _confirmTimer;
+
+    /// <summary>Distinct <c>Category</c> values off the loaded items. There is no
+    /// category entity — the rail is a projection of a flat string.</summary>
+    private IReadOnlyList<string> Categories => _items
+        .Select(i => i.Category)
+        .Where(c => !string.IsNullOrWhiteSpace(c))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(c => c, StringComparer.CurrentCultureIgnoreCase)
+        .ToList();
+
+    private IReadOnlyList<MenuItemDto> Visible => _items
+        .Where(i => string.Equals(i.Category, _category, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    private decimal Subtotal => _lines.Sum(l => l.Subtotal);
+
+    /// <summary>
+    /// The check label. Part II-A reads <c>Order #482 · Dine In</c>; the number
+    /// exists only once the order is written, and the channel does not exist at all
+    /// (GAP-04), so the label carries what is true at each point.
+    /// </summary>
+    private string CheckLabel => _sentOrder is null ? "New check" : $"Order #{_sentOrder}";
+
+    private string SendLabel => _confirming ? "SENT TO KITCHEN" : "SEND ALL TO KITCHEN";
+
+    /// <summary>The summary bar's line count. Lines, not covers: what the bar
+    /// counts is what the list below it shows.</summary>
+    private string LineCountLabel => _lines.Count == 1 ? "1 item" : $"{_lines.Count} items";
+
+    /// <summary>Part II-A · Handheld. Review opens the check as a sheet; the scrim
+    /// and the close control shut it. Send-all deliberately leaves it open: the
+    /// confirmation is read where the button was pressed, and animating the panel
+    /// away from it would trade a message for a transition.</summary>
+    private void OpenCart() => _cartOpen = true;
+
+    private void CloseCart() => _cartOpen = false;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    /// <summary>
+    /// One read, then <c>IsLive</c> — read after awaiting the call whose result is on
+    /// screen, which is the only point at which it describes these tiles.
+    /// </summary>
+    private async Task LoadAsync()
+    {
+        _items = await Menu.GetAllAsync();
+        _isLive = Menu.IsLive;
+        _loading = false;
+
+        // Exactly one category is always selected (Part II-A · States).
+        if (!Categories.Any(c => string.Equals(c, _category, StringComparison.OrdinalIgnoreCase)))
+        {
+            _category = Categories.FirstOrDefault() ?? string.Empty;
+        }
+    }
+
+    private void SelectCategory(string category) => _category = category;
+
+    /// <summary>
+    /// Tin's merge, unchanged in behaviour: a repeat tap finds the matching line and
+    /// raises it to <c>qty + 1</c> rather than pushing a second line, and the line's
+    /// subtotal follows the quantity. A tap never waits on the network (§11) —
+    /// nothing here is written until SEND ALL.
+    /// </summary>
+    private void AddToOrder(MenuItemDto menuItem)
+    {
+        var existing = _lines.FirstOrDefault(l => l.MenuItemId == menuItem.Id);
+        if (existing is not null)
+        {
+            existing.Quantity++;
+            existing.Subtotal = existing.Quantity * existing.UnitPrice;
+        }
+        else
+        {
+            _lines.Add(new OrderItemDto
+            {
+                MenuItemId = menuItem.Id,
+                MenuItemName = menuItem.Name,
+                Quantity = 1,
+                UnitPrice = menuItem.Price,
+                Subtotal = menuItem.Price
+            });
+        }
+
+        // A new build is a new check: the last order's number stops describing what
+        // is on screen the moment a line is added to an empty cart.
+        if (_lines.Count == 1 && _lines[0].Quantity == 1)
+        {
+            _sentOrder = null;
+        }
+
+        _sendError = null;
+    }
+
+    /// <summary>+ adds one; − removes one and drops the line at zero (Part II-A).</summary>
+    private void SetQuantity(OrderItemDto line, int quantity)
+    {
+        if (quantity <= 0)
+        {
+            RemoveLine(line);
+            return;
+        }
+
+        line.Quantity = quantity;
+        line.Subtotal = line.Quantity * line.UnitPrice;
+    }
+
+    private void RemoveLine(OrderItemDto line) => _lines.Remove(line);
+
+    /// <summary>
+    /// The POC's one write: a whole order, one <c>OrderItemDto</c> per line, posted
+    /// to <c>/api/orders</c>, which the API broadcasts as <c>ReceiveNewOrder</c>. It
+    /// comes back an <c>OrderDto</c> at <c>Pending</c>, so the check can name its
+    /// number. Lines are copied into the DTO rather than handed over, so clearing the
+    /// cart cannot reach into what was sent.
+    ///
+    /// Tin's version wrote its failures to the console, where a server on a terminal
+    /// never sees them. They surface as one line naming the cause and the next move
+    /// instead (§10), which is the Menu manager's contract for the same case.
+    /// </summary>
+    private async Task SendAll()
+    {
+        if (_sending || _lines.Count == 0)
+        {
+            return;
+        }
+
+        _sendError = null;
+        _sending = true;
+        try
+        {
+            var created = await Api.CreateOrderAsync(new CreateOrderDto
+            {
+                CustomerName = CustomerName,
+                TableId = TableId,
+                Items = _lines.Select(l => new OrderItemDto
+                {
+                    MenuItemId = l.MenuItemId,
+                    MenuItemName = l.MenuItemName,
+                    Quantity = l.Quantity,
+                    UnitPrice = l.UnitPrice,
+                    Subtotal = l.Subtotal
+                }).ToList()
+            });
+
+            _lines.Clear();
+            _sentOrder = created?.Id;
+            StartConfirmation();
+        }
+        catch (Exception ex)
+        {
+            _sendError = $"Could not send the check · {Reason(ex)}";
+        }
+        finally
+        {
+            _sending = false;
+        }
+    }
+
+    /// <summary>SEND ALL confirms as <c>SENT TO KITCHEN</c> for 2s, then returns
+    /// (Part II-A · States).</summary>
+    private void StartConfirmation()
+    {
+        _confirming = true;
+        _confirmTimer?.Dispose();
+        _confirmTimer = new Timer(_ =>
+        {
+            _confirming = false;
+            _ = InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(2), Timeout.InfiniteTimeSpan);
+    }
+
+    public void Dispose() => _confirmTimer?.Dispose();
+
+    /// <summary>One line, cause then next move (§10). A connection-level failure and
+    /// an HTTP status read differently to whoever has to fix it.</summary>
+    private static string Reason(Exception ex) => ex switch
+    {
+        HttpRequestException { StatusCode: not null } http =>
+            $"the orders API answered {(int)http.StatusCode} · retry or check the API log",
+        HttpRequestException =>
+            "the orders API is unreachable from this terminal · the check is still here",
+        TaskCanceledException =>
+            "the orders API did not answer before the timeout · the check is still here",
+        _ => "the orders API errored · retry or check the API log"
+    };
+
+    /// <summary>Money is Archivo 800 and whole-dollar comma-grouped on a staff
+    /// surface (§6). The format is invariant so a decimal point is a decimal
+    /// point wherever the terminal ships.</summary>
+    private static string Money(decimal value) =>
+        "$" + value.ToString("#,##0.00", CultureInfo.InvariantCulture);
+
+    /// <summary>The confirmation's check, drawn as an inline SVG rather than a
+    /// ✓ character (§9).</summary>
+    private RenderFragment SentCheck => @<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                                              stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                              stroke-linejoin="round" aria-hidden="true">
+                                             <path d="M20 6L9 17l-5-5" />
+                                         </svg>;
+
+    /// <summary>The sheet's close glyph, an inline SVG at stroke-width 2 (§9).</summary>
+    private RenderFragment CloseGlyph => @<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                                               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                               stroke-linejoin="round" aria-hidden="true">
+                                              <path d="M18 6L6 18M6 6l12 12" />
+                                          </svg>;
+}

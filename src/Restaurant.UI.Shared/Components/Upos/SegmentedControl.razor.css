@@ -1,0 +1,15 @@
+/* Focus, and the inactive-option hover Part III specs and the verbatim kit does
+   not carry. The hover sits inside @media (hover:hover) so a touch surface never
+   receives it, matching the kit's own single-guard rule. */
+
+.u-segmented__opt:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}
+
+@media (hover: hover) {
+    .u-segmented__opt:not(.is-active):hover {
+        opacity: 1;
+        background: var(--upos-surface-hover);
+    }
+}

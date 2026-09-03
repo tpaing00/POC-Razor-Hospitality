@@ -1,12 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="slate">
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 	<title>Restaurant Mobile</title>
 	<base href="/" />
-	<link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+	<!-- Handbook §12: the two UPOS stylesheets, tokens first — upos-components.css
+	     reads tokens upos-tokens.css defines, so reversing them leaves every
+	     component unstyled. They are served straight out of Restaurant.UI.Shared,
+	     which is the one copy both hosts read.
+
+	     Restaurant.Mobile.styles.css is the scoped-CSS bundle. Without it none of
+	     the .razor.css files in the shared library reach this host at all, which is
+	     why the terminal shell, the cart line and the menu card all render flat
+	     here today.
+
+	     Bootstrap is gone (§12's migration, step 1): its chrome has to be overridden
+	     before one UPOS screen looks right, no screen here depends on its grid, and
+	     every byte ships to a device that has to work with no network. -->
+	<link rel="stylesheet" href="_content/Restaurant.UI.Shared/css/upos-tokens.css" />
+	<link rel="stylesheet" href="_content/Restaurant.UI.Shared/css/upos-components.css" />
 	<link rel="stylesheet" href="css/app.css" />
+	<link rel="stylesheet" href="Restaurant.Mobile.styles.css" />
 </head>
 
 <body>
@@ -15,7 +30,7 @@
 	<div id="blazor-error-ui">
 		An unhandled error has occurred.
 		<a href="" class="reload">Reload</a>
-		<a class="dismiss">🗙</a>
+		<a class="dismiss">Dismiss</a>
 	</div>
 
 	<script src="_framework/blazor.webview.js" autostart="false"></script>
