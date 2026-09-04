@@ -63,6 +63,29 @@ public interface IPrinterTransport
         var available = IsAvailable(out var reason);
         return new[] { new TransportAvailability(Name, available, available ? null : reason) };
     }
+
+    /// <summary>
+    /// The id <see cref="ConnectAsync"/> would take for a printer at
+    /// <paramref name="address"/> reached over the transport called
+    /// <paramref name="transportName"/>, or null when this host has no such transport.
+    ///
+    /// **This exists because the venue's registry stores a transport and an address,
+    /// not an id.** A registry row has to survive being read by a different host from
+    /// the one that wrote it, so it records the two durable facts — <c>Network</c> and
+    /// <c>192.168.1.50:9100</c> — rather than a routing key that is an artifact of one
+    /// host's registration order. Turning those back into an id is the transport's job,
+    /// because the transport is what invented the prefix.
+    ///
+    /// Null rather than a throw, and null rather than a guess: a back office on a host
+    /// with no Bluetooth radio can still list a Bluetooth printer the venue owns, and
+    /// the honest answer to "print to it from here" is that this host cannot reach it —
+    /// which is a sentence the caller writes, not an exception.
+    ///
+    /// The default is the answer for a transport that is one thing: it takes its own
+    /// address unchanged and answers for nobody else's.
+    /// </summary>
+    string? RouteTo(string transportName, string address) =>
+        string.Equals(Name, transportName, StringComparison.OrdinalIgnoreCase) ? address : null;
 }
 
 /// <summary>

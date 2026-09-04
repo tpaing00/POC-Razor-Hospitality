@@ -33,10 +33,13 @@
             <span>Menu</span>
         </NavLink>
 
-        @* A real back-office destination, not a preview. It scans over the venue
-           network and over the radio of the machine serving this server, which is
-           a fact the screen itself states rather than leaving to be inferred. *@
-        <NavLink class="u-nav-item" ActiveClass="is-active" href="printers">
+        @* A real back-office destination, not a preview. It holds the venue's
+           registry of the printers it owns, and below it the printer this host
+           itself prints to — which it reaches over the venue network and over the
+           radio of the machine serving this server, a fact the screen states
+           rather than leaving to be inferred. *@
+        <NavLink class="u-nav-item" ActiveClass="is-active" href="printers"
+                 title="The venue's printers, and the one this host prints to">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
                  stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M6 9V2h12v7" />
@@ -106,8 +109,13 @@
             <span>Reports</span>
         </span>
 
+        @* Terminals, and no longer printers: the venue's printers moved to the
+           Printers destination above, which is built. What is left here is the
+           harder half — which terminal exists, which registry printer each one
+           claims, when each was last seen — and it waits on a terminal identity
+           the schema cannot issue (GAP-13) rather than on an endpoint. *@
         <span class="u-nav-item is-disabled" aria-disabled="true"
-              title="Devices · not built in this pass">
+              title="Devices · terminals and the printer each one claims · not built in this pass">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
                  stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="2" y="3" width="20" height="14" rx="2" />

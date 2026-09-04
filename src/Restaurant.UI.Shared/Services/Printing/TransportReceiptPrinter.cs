@@ -190,9 +190,50 @@ public sealed class TransportReceiptPrinter : IReceiptPrinter
     }
 
     /// <summary>
-    /// Connect, enable status reporting, write, listen, close. Every job takes a fresh
-    /// connection: an RFCOMM socket held open across a shift is how a terminal ends up
-    /// unable to reconnect after somebody power-cycles the printer.
+    /// One label to a printer the venue's registry named, leaving this host's own
+    /// selection and condition exactly where they were.
+    ///
+    /// **Nothing is published.** No <see cref="Set"/> call, so <see cref="Condition"/>
+    /// does not move, <see cref="Changed"/> is not raised and no screen re-renders off
+    /// this. That is the whole point: a manager testing the bar printer from the
+    /// registry must not repaint the chip that describes the printer this host actually
+    /// prints to. The answer is the returned outcome and nowhere else.
+    ///
+    /// It still takes the gate, because the socket does not care why two writes
+    /// overlapped.
+    /// </summary>
+    public async Task<PrintOutcome> PrintTestLabelToAsync(
+        string transportName,
+        string address,
+        string terminalId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return new PrintOutcome(false, new PrinterCondition(
+                PrinterState.Failed,
+                "That printer has no address · edit it and give it one"));
+        }
+
+        var routed = _transport.RouteTo(transportName, address);
+        if (routed is not { Length: > 0 })
+        {
+            // The venue owns the printer and this host cannot get to it. That is a
+            // fact about the host, said as one, rather than a failed connection —
+            // nothing was dialled, so nothing can be reported about the printer.
+            return new PrintOutcome(false, new PrinterCondition(
+                PrinterState.Failed,
+                $"This host has no {transportName} transport · test this printer from a host that does"));
+        }
+
+        var payload = BagTicket.BuildTestLabel(terminalId, DateTime.Now);
+        var device = new PrinterDevice(routed, address, Transport: transportName, Address: address);
+
+        return await ExchangeAsync(payload, device, publish: false, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The host's own printer: the selection, the condition and the events all move.
     /// </summary>
     private async Task<PrintOutcome> SendAsync(byte[] payload, CancellationToken cancellationToken)
     {
@@ -209,15 +250,44 @@ public sealed class TransportReceiptPrinter : IReceiptPrinter
             return new PrintOutcome(false, PrinterCondition.NoPrinter);
         }
 
+        return await ExchangeAsync(payload, _selected, publish: true, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Connect, enable status reporting, write, listen, close. Every job takes a fresh
+    /// connection: an RFCOMM socket held open across a shift is how a terminal ends up
+    /// unable to reconnect after somebody power-cycles the printer.
+    ///
+    /// <paramref name="publish"/> is what separates the host's own printer from one the
+    /// registry named. True writes every step into <see cref="Condition"/> and raises
+    /// <see cref="Changed"/>; false leaves both alone and puts the whole answer in the
+    /// returned outcome. The exchange itself is identical either way — a label is a
+    /// label, and there is one place that knows how to get one out of a printer.
+    /// </summary>
+    private async Task<PrintOutcome> ExchangeAsync(
+        byte[] payload,
+        PrinterDevice target,
+        bool publish,
+        CancellationToken cancellationToken)
+    {
+        if (!_transport.IsAvailable(out var unavailable))
+        {
+            var blocked = new PrinterCondition(PrinterState.NoPrinter, unavailable ?? UnavailableLine);
+            return Report(blocked, printed: false, publish);
+        }
+
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            Set(new PrinterCondition(PrinterState.Printing));
+            if (publish)
+            {
+                Set(new PrinterCondition(PrinterState.Printing));
+            }
 
             IPrinterConnection connection;
             try
             {
-                connection = await _transport.ConnectAsync(_selected.Id, cancellationToken).ConfigureAwait(false);
+                connection = await _transport.ConnectAsync(target.Id, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -225,9 +295,10 @@ public sealed class TransportReceiptPrinter : IReceiptPrinter
                 // true of an address on a network, and this one sentence is now shown
                 // for both — so it says the thing that is true of either: the printer
                 // has to be on, and this host has to be able to get to it.
-                return Fail(new PrinterCondition(
+                return Report(new PrinterCondition(
                     PrinterState.Unreachable,
-                    $"Printer unreachable · check it is switched on and reachable from this host ({Reason(ex)})"));
+                    $"Printer unreachable · check it is switched on and reachable from this host ({Reason(ex)})"),
+                    printed: false, publish);
             }
 
             try
@@ -244,7 +315,7 @@ public sealed class TransportReceiptPrinter : IReceiptPrinter
                 var fault = status.ToCondition();
                 if (fault is not null)
                 {
-                    return Fail(fault);
+                    return Report(fault, printed: false, publish);
                 }
 
                 // The bytes went out. Whether the printer reported its own condition is
@@ -259,12 +330,13 @@ public sealed class TransportReceiptPrinter : IReceiptPrinter
                             : "Printed · the printer did not report its condition, so paper is unconfirmed",
                     StatusWasReadable: status.IsKnown);
 
-                Set(done);
-                return new PrintOutcome(true, done);
+                return Report(done, printed: true, publish);
             }
             catch (Exception ex)
             {
-                return Fail(new PrinterCondition(PrinterState.Failed, $"Could not print · {Reason(ex)}"));
+                return Report(
+                    new PrinterCondition(PrinterState.Failed, $"Could not print · {Reason(ex)}"),
+                    printed: false, publish);
             }
             finally
             {
@@ -285,10 +357,22 @@ public sealed class TransportReceiptPrinter : IReceiptPrinter
         }
     }
 
-    private PrintOutcome Fail(PrinterCondition condition)
+    /// <summary>
+    /// The outcome, published to the screen or not.
+    ///
+    /// A job for the host's own printer writes its result into
+    /// <see cref="Condition"/>; a job for a printer the registry named does not, so
+    /// the chip describing this host's printer keeps saying what it said before
+    /// somebody tested the bar.
+    /// </summary>
+    private PrintOutcome Report(PrinterCondition condition, bool printed, bool publish)
     {
-        Set(condition);
-        return new PrintOutcome(false, condition);
+        if (publish)
+        {
+            Set(condition);
+        }
+
+        return new PrintOutcome(printed, condition);
     }
 
     private void Set(PrinterCondition condition)

@@ -312,10 +312,12 @@
                 is cooked (GAP-06).
             </p>
             <p class="ps__blocked-needs">
-                Which terminal claims which printer, and when each was last seen, is the back
-                office&rsquo;s <code>Devices</code> record. That is a new table contradicting nothing
-                in the current schema, so it is API work rather than a gap &mdash; the same ruling
-                the Employees, Devices, Settings spec already makes.
+                The venue&rsquo;s list of the printers it owns is the back office&rsquo;s
+                <code>Printers</code> registry, and it is built. What it does not hold is which
+                terminal claims which printer, or when each was last seen: that is the
+                <code>Devices</code> record, and it needs a terminal identity nothing can issue
+                yet (GAP-13). Nothing in the back office changes the pairing above &mdash; this
+                tablet&rsquo;s printer is chosen here or not at all.
             </p>
         </section>
         }

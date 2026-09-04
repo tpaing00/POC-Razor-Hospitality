@@ -78,6 +78,41 @@ public interface IReceiptPrinter
     /// anything.</summary>
     Task<PrintOutcome> PrintTestLabelAsync(string terminalId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Print one test label to a printer named by transport and address, without
+    /// selecting it.
+    ///
+    /// **The back office's registry needs this and the terminal does not, and the
+    /// difference is what the two screens are for.** The terminal has one printer and
+    /// proving it works means proving *its* printer works, which is
+    /// <see cref="PrintTestLabelAsync"/>. The registry is the venue's list of printers
+    /// this host may never print an order to, and "does the bar printer answer" has to
+    /// be answerable without re-pointing anything.
+    ///
+    /// **So it changes nothing.** <see cref="Selected"/>, <see cref="Condition"/> and
+    /// the remembered preference are all left exactly as they were, and
+    /// <see cref="Changed"/> is not raised — a manager testing the bar printer must not
+    /// move the status chip that describes the host's own. The whole answer is in the
+    /// returned <see cref="PrintOutcome"/>, which the caller renders beside the control
+    /// it was fired from.
+    ///
+    /// It still takes the same one-job-at-a-time gate as every other print: two writes
+    /// overlapping down one socket interleave into a label carrying half of each.
+    ///
+    /// Never throws. A transport this host does not have, an address it cannot reach
+    /// and a printer with no paper all come back as a condition carrying a sentence.
+    /// </summary>
+    /// <param name="transportName">The transport's own name, as
+    /// <see cref="IPrinterTransport.Name"/> reports it — "Network", "Bluetooth".</param>
+    /// <param name="address">The address in that transport's terms.</param>
+    /// <param name="terminalId">What to print on the label, so a label found on a bench
+    /// says what fired it.</param>
+    Task<PrintOutcome> PrintTestLabelToAsync(
+        string transportName,
+        string address,
+        string terminalId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Raised whenever <see cref="Condition"/>, <see cref="Selected"/> or
     /// <see cref="Found"/> moves. The screen re-renders off this rather than
     /// polling.</summary>
@@ -134,6 +169,15 @@ public sealed class UnavailableReceiptPrinter : IReceiptPrinter
         Task.FromResult(new PrintOutcome(false, NoHost));
 
     public Task<PrintOutcome> PrintTestLabelAsync(string terminalId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new PrintOutcome(false, NoHost));
+
+    /// <summary>The same refusal. A host with no transport cannot reach a registry's
+    /// printer any more than it can reach its own.</summary>
+    public Task<PrintOutcome> PrintTestLabelToAsync(
+        string transportName,
+        string address,
+        string terminalId,
+        CancellationToken cancellationToken = default) =>
         Task.FromResult(new PrintOutcome(false, NoHost));
 
     /// <summary>Never raised. The accessors are written out so the compiler does not

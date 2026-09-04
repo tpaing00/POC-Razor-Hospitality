@@ -210,6 +210,30 @@ public sealed class CompositePrinterTransport : IAddressablePrinterTransport
             "No transport on this host takes a typed address · use scan instead");
     }
 
+    /// <summary>
+    /// Put the routing prefix of the member called <paramref name="transportName"/> on
+    /// the front of <paramref name="address"/>.
+    ///
+    /// **The member is asked rather than assumed**, so a nested composite answers for
+    /// its own leaves and a member with its own idea of what an address means keeps it.
+    /// A name no member holds returns null, which is the honest answer for a back
+    /// office listing a Bluetooth printer on a host that has no radio: the venue owns
+    /// it, and this host cannot reach it.
+    /// </summary>
+    public string? RouteTo(string transportName, string address)
+    {
+        foreach (var (key, transport) in _members)
+        {
+            var inner = transport.RouteTo(transportName, address);
+            if (inner is { Length: > 0 })
+            {
+                return $"{key}{Separator}{inner}";
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>Whether any available member takes a typed address. A composite is
     /// available when any member is, which is not the same as any member taking an
     /// address, so this is overridden rather than inherited.</summary>

@@ -1,0 +1,342 @@
+/* Back office · Printers — handbook Part II-B · Printers. Every value here is
+   either a token or a literal the spec states in px. No hex appears in this file.
+
+   The registry does not take the shell's .panel class, for the reason the Menu
+   manager does not: the panel's 32px padding would inset the two panes off their
+   own hairline, and the spec wants the list column and the detail pane running
+   edge to edge inside one floating surface. .pr reproduces the panel chrome. */
+
+.pr {
+    display: flex;
+    flex-direction: column;
+    background: var(--upos-surface);
+    border-radius: var(--upos-radius-panel);
+    box-shadow: var(--upos-shadow-card);
+    overflow: hidden;
+}
+
+/* One quiet line, full width, above the panes. It takes the late ink because
+   every notice this screen renders is a real failure — the registry did not
+   answer, or it refused a write (§4: words take the text tokens, never fills). */
+.pr__notice {
+    margin: 0;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--upos-border);
+    background: var(--upos-surface-inset);
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.pr__notice--warn {
+    color: var(--upos-status-late-text);
+}
+
+.pr__panes {
+    display: flex;
+    align-items: stretch;
+}
+
+/* ─── List column, 320px ────────────────────────────────────────────────── */
+
+.pr__list {
+    flex: none;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--upos-border);
+    max-height: 760px;
+    overflow-y: auto;
+}
+
+.pr__list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--upos-border);
+}
+
+.pr__list-title {
+    margin: 0;
+    font: 800 14px/1.3 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink);
+}
+
+/* One bare text button, not a filled control: the spec's + ADD is a word in the
+   accent, and a second filled button in a header row competes with the rail. */
+.pr__add {
+    flex: none;
+    border: none;
+    background: none;
+    padding: 0;
+    font: 800 11px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .08em;
+    color: var(--upos-accent-deep);
+    cursor: pointer;
+}
+
+.pr__add:disabled {
+    color: var(--upos-ink-subtle);
+    cursor: default;
+}
+
+.pr__add:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+    border-radius: var(--upos-radius-pill);
+}
+
+.pr__rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+    padding: 14px 16px 20px;
+}
+
+.pr__row-name {
+    display: block;
+    font: 700 13px/1.3 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink);
+}
+
+.pr__row-addr {
+    display: block;
+    margin-top: 2px;
+    font: var(--upos-type-mono);
+    color: var(--upos-ink-subtle);
+}
+
+.pr__row-tags {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--upos-space-gap-chip);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.pr__empty {
+    margin: 0;
+    padding: 8px 8px 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── Detail pane ───────────────────────────────────────────────────────── */
+
+.pr__detail {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-card);
+    padding: 24px 28px;
+}
+
+.pr__detail-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+}
+
+.pr__detail-name {
+    margin: 0;
+    font: 800 18px/1.25 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink);
+}
+
+.pr__detail-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-chip);
+}
+
+/* §11: a destructive control is Ghost with its label forced to --upos-ink, never
+   a red variant — the red arrives on the confirming step. The wrapper carries the
+   override because scoped CSS needs something to descend from with ::deep. */
+.pr__destructive ::deep .u-btn {
+    color: var(--upos-ink);
+}
+
+/* ─── Blocks ────────────────────────────────────────────────────────────── */
+
+/* The Menu manager's block geometry, inherited rather than invented. */
+.pr__block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-line);
+    padding: var(--upos-space-pad-inset);
+    border-radius: var(--upos-radius-card);
+    background: var(--upos-surface-inset);
+}
+
+.pr__label {
+    margin: 0;
+    font: 700 11px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .08em;
+    color: var(--upos-ink-subtle);
+}
+
+.pr__value {
+    margin: 0;
+    font: 700 14px/1.35 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink);
+}
+
+.pr__value--mono {
+    font: var(--upos-type-mono);
+    color: var(--upos-ink-subtle);
+}
+
+.pr__statement {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.pr__statement code {
+    font: var(--upos-type-mono);
+}
+
+/* One line under a control, carrying what happened (§10). Quiet by default: a
+   result that is neither good nor bad news does not take a colour. */
+.pr__line {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.pr__line--warn {
+    color: var(--upos-status-late-text);
+}
+
+.pr__line--ok {
+    color: var(--upos-status-ready-text);
+}
+
+/* ─── Fields ────────────────────────────────────────────────────────────── */
+
+.pr__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pr__field-label {
+    font: 700 11px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .08em;
+    color: var(--upos-ink-subtle);
+}
+
+.pr__field-hint {
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.pr__input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: var(--upos-touch-terminal);
+    padding: var(--upos-space-pad-row);
+    border: 1px solid var(--upos-border);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface);
+    color: var(--upos-ink);
+    font: 400 14px/1.35 Archivo, system-ui, sans-serif;
+}
+
+.pr__input:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 1px;
+}
+
+.pr__check {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-chip);
+    font: 400 14px/1.35 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink);
+    cursor: pointer;
+}
+
+.pr__check input {
+    accent-color: var(--upos-accent);
+    width: 18px;
+    height: 18px;
+}
+
+.pr__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--upos-space-gap-chip);
+}
+
+/* ─── What a scan found ─────────────────────────────────────────────────── */
+
+.pr__found {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+}
+
+/* Not a .u-data-row: these are a prefill for the field above rather than rows in
+   a list, and giving them the row treatment would make them look like a second
+   registry sitting inside the first. */
+.pr__found-row {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-inline);
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--upos-space-pad-inset);
+    border: 1px solid var(--upos-border);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface);
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--upos-dur-fast) var(--upos-ease);
+}
+
+.pr__found-row .pr__row-name,
+.pr__found-row .pr__row-addr {
+    flex: 1;
+    min-width: 0;
+}
+
+.pr__found-via {
+    flex: none;
+    font: 700 10px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .08em;
+    color: var(--upos-ink-subtle);
+}
+
+.pr__found-row:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 2px;
+}
+
+@media (hover: hover) {
+    .pr__found-row:hover {
+        background: var(--upos-surface-hover);
+    }
+}
+
+/* The host's own printer keeps the setup screen exactly as it renders on the
+   terminal, centred inside its own 640px measure. Nothing here reaches into it:
+   it is the same component with the same states, and a page overriding its
+   geometry is how one screen quietly becomes two. */
+
+@media (max-width: 1100px) {
+    .pr__panes {
+        flex-direction: column;
+    }
+
+    .pr__list {
+        width: auto;
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid var(--upos-border);
+    }
+}

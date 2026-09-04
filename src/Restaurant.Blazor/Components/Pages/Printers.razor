@@ -1,46 +1,328 @@
 @page "/printers"
+@using Restaurant.Shared.Models
+@using Restaurant.Shared.Models.Dtos
 @using Restaurant.UI.Shared.Components.Screens
+@using Restaurant.UI.Shared.Services
+@using Restaurant.UI.Shared.Services.Printing
+@implements IDisposable
+@inject RestaurantApiService Api
+@inject IReceiptPrinter HostPrinter
 
-@* Back office · Printers. Discover a printer over the network or the host's radio,
-   choose one, and print a test label.
+@* Back office · Printers. Handbook Part II-B · Printers.
 
-   **WHOSE RADIO AND WHOSE NETWORK.** Restaurant.Blazor is Blazor Server: the C#
-   behind this page runs in the ASP.NET process, not in the browser. So what this
-   page scans is the machine serving the back office — the counter PC, the mini-PC
-   in the office, the POS device itself where the back office is served from it —
-   and never the laptop the manager happens to be reading this on. That is not a
-   limitation to be hidden; it is the fact that decides whether a scan finds
-   anything, so the screen states it in a line rather than leaving somebody to work
-   it out from an empty list.
+   TWO THINGS ON ONE PAGE, AND THE ORDER IS THE ARGUMENT.
 
-   **Why this reuses PrinterSetupScreen rather than getting its own.** The job is
-   the same job — list what can be reached, choose one, prove it prints — and every
-   state on it is one a transport can prove. What differs between the two hosts is
-   six sentences and whether a typed address is offered, and those are parameters.
-   Building a second screen would mean two places to keep the seven states honest
-   in, which is exactly how a NOT TESTED becomes a READY nobody earned.
+   Above: the venue's registry — which printers this venue owns, what each one is
+   for, how each is reached. It is persisted, it is read by anything with the API,
+   and it selects a printer for nobody.
 
-   What is genuinely different is the frame: the terminal's screen is inside
-   TerminalShell with its 76px bar and 78px nav, and this one is a back-office
-   .panel in the rail layout. That is this page's job and not the screen's.
+   Below: this host's own printer — the discovery, the selection and the test label
+   that PrinterSetupScreen has always been. It is held for as long as this server
+   process and it is this machine's choice, not the venue's.
 
-   **Opening this page scans nothing.** A scan here is a multicast query and, where
-   that finds nothing, a bounded sweep of the subnet — and doing that on every page
-   open, or every time a Blazor circuit reconnects, is exactly what a restaurant
-   network must not get. It waits to be asked. The terminal keeps its scan on open,
-   because reading a bonded list the platform already holds costs the room nothing.
+   Keeping them apart is the point. A registry that also set the per-device
+   selection would be a manager in the office silently re-pointing a tablet on the
+   floor, and the tablet would have no way to say so. Reading the terminals' own
+   choices back into one venue-wide view is the Devices destination, and it needs a
+   terminal identity that does not exist (GAP-13).
 
-   This page does NOT record which terminal claims which printer. That is the
-   Devices registry, it is a new table, and it is deliberately the next task and
-   not this one. What is selected here is held for as long as this server process
-   and no longer, and the screen says nothing that implies otherwise. *@
+   WHOSE RADIO AND WHOSE NETWORK. Restaurant.Blazor is Blazor Server, so the C#
+   behind this page runs in the ASP.NET process. The back office is a browser
+   pointed at a central server, so in production the peripherals this page can
+   touch are that one server's — which means a Bluetooth scan from here will
+   usually find nothing, and that is correct rather than broken. The network
+   transport is the one that matters in production. The screen below states whose
+   machine it speaks for rather than leaving somebody to infer it from an empty
+   list. *@
 
 <PageTitle>Printers</PageTitle>
 
-<section class="panel">
+@* ─── The venue's registry ─────────────────────────────────────────────────── *@
+@* Not .panel. The shell's panel pads 32px, which would inset the two panes off
+   their own hairline; .pr reproduces the panel chrome and lets them run edge to
+   edge, the same arrangement the Menu manager makes for the same reason. *@
+<section class="pr">
+
+    @if (_loadError is not null)
+    {
+        <p class="pr__notice pr__notice--warn">@_loadError</p>
+    }
+
+    @if (_writeError is not null)
+    {
+        <p class="pr__notice pr__notice--warn">@_writeError</p>
+    }
+
+    <div class="pr__panes">
+
+        @* ─── List column, 320px ───────────────────────────────────────── *@
+        <div class="pr__list">
+            <header class="pr__list-head">
+                <h1 class="pr__list-title">Printers &middot; @_printers.Count</h1>
+                <button type="button" class="pr__add" disabled="@_busy" @onclick="StartAdd">+ ADD PRINTER</button>
+            </header>
+
+            <div class="pr__rows">
+                @if (_loading)
+                {
+                    <p class="pr__empty">Reading the venue&rsquo;s printers.</p>
+                }
+                else if (_loadError is not null)
+                {
+                    @* No rows. A registry that could not be read has no contents to
+                       imply, and an empty list beside an error reads as "the venue
+                       owns nothing" rather than "nothing was read". *@
+                    <p class="pr__empty">The list is not available until the registry answers.</p>
+                }
+                else if (_printers.Count == 0)
+                {
+                    <p class="pr__empty">No printers registered. Add the first one and every terminal can find it.</p>
+                }
+                else
+                {
+                    @foreach (var printer in _printers)
+                    {
+                        var isSelected = printer.Id == _selectedId;
+                        <DataRow Selected="isSelected"
+                                 BorderTone="@(printer.IsActive ? null : StatusTone.Late)"
+                                 OnClick="@(() => Select(printer.Id))">
+                            <ChildContent>
+                                <span class="pr__row-name">@printer.Name</span>
+                                <span class="pr__row-addr">@printer.Address</span>
+                            </ChildContent>
+                            <Trailing>
+                                <span class="pr__row-tags">
+                                    <Pill Label="@RoleLabel(printer.Role).ToUpperInvariant()" Bordered="true" />
+                                    @if (!printer.IsActive)
+                                    {
+                                        <Pill Label="OUT OF SERVICE" Bordered="true" />
+                                    }
+                                </span>
+                            </Trailing>
+                        </DataRow>
+                    }
+                }
+            </div>
+        </div>
+
+        @* ─── Detail pane ──────────────────────────────────────────────── *@
+        <div class="pr__detail">
+
+            @if (_draft is not null)
+            {
+                @* Add and edit are the same form, because they write the same seven
+                   fields to the same endpoint and two forms would be two places for
+                   a validation rule to drift. *@
+                <header class="pr__detail-head">
+                    <h2 class="pr__detail-name">@(_draft.Id == 0 ? "Add a printer" : $"Edit {_original?.Name}")</h2>
+                </header>
+
+                <section class="pr__block">
+                    <p class="pr__label">WHAT IT IS</p>
+
+                    <label class="pr__field">
+                        <span class="pr__field-label">NAME</span>
+                        <input class="pr__input"
+                               type="text"
+                               maxlength="60"
+                               placeholder="Kitchen"
+                               autocomplete="off"
+                               @bind="_draft.Name"
+                               @bind:event="oninput" />
+                        <span class="pr__field-hint">Call it what somebody on the floor calls it.</span>
+                    </label>
+
+                    <label class="pr__field">
+                        <span class="pr__field-label">WHAT IT IS FOR</span>
+                        <select class="pr__input" @bind="_draft.Role">
+                            @foreach (var role in Roles)
+                            {
+                                <option value="@role">@RoleLabel(role)</option>
+                            }
+                        </select>
+                        <span class="pr__field-hint">
+                            A record of what this printer is for. Nothing routes an order line to it
+                            yet &mdash; that needs a station on <code>OrderItem</code> (GAP-06).
+                        </span>
+                    </label>
+                </section>
+
+                <section class="pr__block">
+                    <p class="pr__label">HOW IT IS REACHED</p>
+
+                    <label class="pr__field">
+                        <span class="pr__field-label">TRANSPORT</span>
+                        <select class="pr__input" @bind="_draft.Transport">
+                            @foreach (var transport in Transports)
+                            {
+                                <option value="@transport">@TransportLabel(transport)</option>
+                            }
+                        </select>
+                    </label>
+
+                    <label class="pr__field">
+                        <span class="pr__field-label">ADDRESS</span>
+                        <input class="pr__input"
+                               type="text"
+                               inputmode="url"
+                               maxlength="100"
+                               autocomplete="off"
+                               spellcheck="false"
+                               placeholder="@(_draft.Transport == PrinterTransportKind.Bluetooth ? "00:11:62:4C:58:5D" : "192.168.1.50")"
+                               @bind="_draft.Address"
+                               @bind:event="oninput" />
+                        <span class="pr__field-hint">
+                            @(_draft.Transport == PrinterTransportKind.Bluetooth
+                                ? "Six pairs of hex digits, as the host's Bluetooth settings show it."
+                                : "Hold the printer's FEED button while switching it on to print its self-test page. The address is on it. The port defaults to 9100.")
+                        </span>
+                    </label>
+
+                    <label class="pr__check">
+                        <input type="checkbox" @bind="_draft.IsActive" />
+                        <span>In service</span>
+                    </label>
+                </section>
+
+                @* ─── From a scan ──────────────────────────────────────── *@
+                @* Discovery is not rebuilt here. This is the same list the screen
+                   below renders, read off the same host, offered as a prefill so
+                   nobody retypes an address a scan already found. *@
+                <section class="pr__block">
+                    <p class="pr__label">FROM A SCAN</p>
+
+                    @if (HostPrinter.Found.Count == 0)
+                    {
+                        <p class="pr__statement">
+                            Nothing has been found on this host yet. Scan below, then come back and pick
+                            a result &mdash; or type the address from the printer&rsquo;s self-test page.
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="pr__statement">
+                            What this host can reach right now. Picking one fills in the transport and
+                            the address; the name and what it is for are yours.
+                        </p>
+                        <div class="pr__found">
+                            @foreach (var device in HostPrinter.Found)
+                            {
+                                <button type="button" class="pr__found-row" @onclick="@(() => PrefillFrom(device))">
+                                    <span class="pr__row-name">@device.Name</span>
+                                    <span class="pr__row-addr">@device.Display</span>
+                                    @if (device.Transport is { Length: > 0 } via)
+                                    {
+                                        <span class="pr__found-via">@via.ToUpperInvariant()</span>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    }
+                </section>
+
+                <div class="pr__actions">
+                    <UposButton Variant="ButtonVariant.Secondary"
+                                Label="Cancel"
+                                Disabled="@_busy"
+                                OnClick="CancelDraft" />
+                    <UposButton Variant="ButtonVariant.Primary"
+                                Label="@(_busy ? "Saving" : "Save")"
+                                Disabled="@_busy"
+                                OnClick="SaveDraft" />
+                </div>
+            }
+            else if (Selected is { } printer)
+            {
+                <header class="pr__detail-head">
+                    <h2 class="pr__detail-name">@printer.Name</h2>
+                    <div class="pr__detail-actions">
+                        <UposButton Variant="ButtonVariant.Secondary"
+                                    Label="Edit"
+                                    Disabled="@_busy"
+                                    OnClick="@(() => StartEdit(printer))" />
+                        @* §11: destructive is Ghost with its label at --upos-ink. The
+                           red arrives on the confirming step and never at rest. *@
+                        <div class="pr__destructive">
+                            <UposButton Variant="ButtonVariant.Ghost"
+                                        Label="Remove"
+                                        Disabled="@_busy"
+                                        OnClick="@(() => _confirmingRemove = true)" />
+                        </div>
+                    </div>
+                </header>
+
+                @if (_confirmingRemove)
+                {
+                    <p class="pr__line pr__line--warn">
+                        Remove @printer.Name &middot; the venue stops listing it and its address is not kept
+                    </p>
+                    <div class="pr__actions">
+                        <UposButton Variant="ButtonVariant.Ghost"
+                                    Label="Keep it"
+                                    Disabled="@_busy"
+                                    OnClick="@(() => _confirmingRemove = false)" />
+                        <UposButton Variant="ButtonVariant.Secondary"
+                                    Label="Remove this printer"
+                                    Disabled="@_busy"
+                                    OnClick="@(() => RemoveAsync(printer))" />
+                    </div>
+                }
+
+                <section class="pr__block">
+                    <p class="pr__label">WHAT IT IS FOR</p>
+                    <p class="pr__value">@RoleLabel(printer.Role)</p>
+                    <p class="pr__statement">
+                        A record of what this printer is for. No order line is routed to it: that needs
+                        a station on <code>OrderItem</code>, which does not exist (GAP-06). Every check
+                        still prints whole, to whichever printer the terminal is paired with.
+                    </p>
+                </section>
+
+                <section class="pr__block">
+                    <p class="pr__label">HOW IT IS REACHED</p>
+                    <p class="pr__value">@TransportLabel(printer.Transport)</p>
+                    <p class="pr__value pr__value--mono">@printer.Address</p>
+                    @if (!printer.IsActive)
+                    {
+                        <p class="pr__line pr__line--warn">
+                            Out of service &middot; the venue keeps the record and nothing prints to it
+                        </p>
+                    }
+                </section>
+
+                <section class="pr__block">
+                    <p class="pr__label">TEST PRINT</p>
+                    <p class="pr__statement">
+                        One label carrying this printer&rsquo;s name, the time and a column ruler, sent
+                        from the machine serving this page. It proves this printer answers and changes
+                        nothing about what this host or any terminal prints to.
+                    </p>
+
+                    <UposButton Variant="ButtonVariant.Secondary"
+                                MinHeight="48"
+                                Label="@(_testing ? "Printing" : "Print a test label")"
+                                Disabled="@(_busy || _testing)"
+                                OnClick="@(() => TestAsync(printer))" />
+
+                    @if (_testResult is { Length: > 0 })
+                    {
+                        <p class="pr__line @(_testOk ? "pr__line--ok" : "pr__line--warn")">@_testResult</p>
+                    }
+                </section>
+            }
+            else
+            {
+                <p class="pr__empty">No printer selected. Pick a row to load its detail.</p>
+            }
+        </div>
+    </div>
+</section>
+
+@* ─── This host's own printer ──────────────────────────────────────────────── *@
+<section class="panel pr-host">
     <PrinterSetupScreen TerminalId="Back office"
-                        Kicker="BACK OFFICE · PRINTERS"
-                        Note="@Note"
+                        Kicker="BACK OFFICE · THIS HOST"
+                        Note="@HostIntro"
                         ListLabel="PRINTERS THIS HOST CAN REACH"
                         EmptyHint="@EmptyHint"
                         HostNote="@HostNote"
@@ -49,16 +331,279 @@
 </section>
 
 @code {
-    private const string Note =
-        "Printers this back office can reach, over the venue network and over the radio of the " +
-        "machine serving this page.";
+    private const string HostIntro =
+        "What the machine serving this page can reach, and which of those it prints to itself. This " +
+        "is this host's own choice and not the venue's record above; a terminal keeps its own.";
 
     private const string HostNote =
         "These are the network and the radio of the machine serving the back office, not of the " +
-        "computer you are reading this on. A printer beside you is only found here if this page is " +
-        "served from the machine beside it.";
+        "computer you are reading this on. In production that machine is a central server, so a " +
+        "Bluetooth scan here usually finds nothing and a network scan is the one that matters.";
 
     private const string EmptyHint =
         "Nothing found yet. Check the printer is powered on and on the same network as this host, " +
         "then scan — or add it by the address on its self-test page.";
+
+    private static readonly PrinterRole[] Roles =
+        (PrinterRole[])Enum.GetValues(typeof(PrinterRole));
+
+    private static readonly PrinterTransportKind[] Transports =
+        (PrinterTransportKind[])Enum.GetValues(typeof(PrinterTransportKind));
+
+    private List<PrinterDto> _printers = new();
+    private int? _selectedId;
+
+    /// <summary>The row being added or edited. Null means the detail pane is reading
+    /// rather than writing.</summary>
+    private PrinterDto? _draft;
+
+    /// <summary>What the row looked like before the edit, for the heading. The draft is
+    /// a copy, so cancelling costs nothing and a rejected save leaves the typed values
+    /// in the fields to be corrected.</summary>
+    private PrinterDto? _original;
+
+    private bool _loading = true;
+    private bool _busy;
+    private bool _testing;
+    private bool _confirmingRemove;
+    private string? _loadError;
+    private string? _writeError;
+    private string? _testResult;
+    private bool _testOk;
+
+    private PrinterDto? Selected => _selectedId is { } id
+        ? _printers.FirstOrDefault(p => p.Id == id)
+        : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // The host's discovery list feeds the add form's prefill, so the form has to
+        // re-render when a scan below finishes.
+        HostPrinter.Changed += OnHostChanged;
+        await LoadAsync();
+    }
+
+    /// <summary>
+    /// Read the registry, including the printers marked out of service — this is the
+    /// venue's record, and a record that hid half of itself would be a list somebody
+    /// re-registers a duplicate into.
+    /// </summary>
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        try
+        {
+            _printers = await Api.GetPrintersAsync(includeInactive: true);
+
+            if (_selectedId is { } id && _printers.All(p => p.Id != id))
+            {
+                _selectedId = null;
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            _printers = new();
+            _selectedId = null;
+            _loadError = "The printer registry is unreachable · check the API is running, then reload this page.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Select(int id)
+    {
+        _selectedId = id;
+        _draft = null;
+        _original = null;
+        _confirmingRemove = false;
+        _writeError = null;
+        _testResult = null;
+    }
+
+    private void StartAdd()
+    {
+        _selectedId = null;
+        _original = null;
+        _confirmingRemove = false;
+        _writeError = null;
+        _testResult = null;
+        _draft = new PrinterDto { IsActive = true };
+    }
+
+    private void StartEdit(PrinterDto printer)
+    {
+        _confirmingRemove = false;
+        _writeError = null;
+        _testResult = null;
+        _original = printer;
+        _draft = new PrinterDto
+        {
+            Id = printer.Id,
+            Name = printer.Name,
+            Role = printer.Role,
+            Transport = printer.Transport,
+            Address = printer.Address,
+            IsActive = printer.IsActive
+        };
+    }
+
+    private void CancelDraft()
+    {
+        _draft = null;
+        _original = null;
+        _writeError = null;
+    }
+
+    /// <summary>
+    /// Fill the transport and the address from something the host found. The name comes
+    /// across as a suggestion only where the field is still empty — a person who has
+    /// already typed "Bar" should not have it replaced by "Device at 192.168.1.50".
+    /// </summary>
+    private void PrefillFrom(PrinterDevice device)
+    {
+        if (_draft is null)
+        {
+            return;
+        }
+
+        _writeError = null;
+
+        _draft.Transport = string.Equals(device.Transport, "Bluetooth", StringComparison.OrdinalIgnoreCase)
+            ? PrinterTransportKind.Bluetooth
+            : PrinterTransportKind.Network;
+
+        _draft.Address = device.Display;
+
+        if (string.IsNullOrWhiteSpace(_draft.Name))
+        {
+            _draft.Name = device.Name;
+        }
+    }
+
+    /// <summary>
+    /// Write the draft. The server validates and normalizes, so what comes back
+    /// replaces what was sent — an address typed as 192.168.1.50 is stored and shown as
+    /// 192.168.1.50:9100.
+    /// </summary>
+    private async Task SaveDraft()
+    {
+        if (_draft is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _writeError = null;
+        try
+        {
+            var saved = _draft.Id == 0
+                ? await Api.CreatePrinterAsync(_draft)
+                : await Api.UpdatePrinterAsync(_draft);
+
+            if (saved is null)
+            {
+                _writeError = "The registry accepted that change but returned nothing · reload this page to see what it holds.";
+                return;
+            }
+
+            _draft = null;
+            _original = null;
+            _selectedId = saved.Id;
+            await LoadAsync();
+        }
+        catch (PrinterRegistryException ex)
+        {
+            // The server's own sentence. The draft stays in the fields to be corrected
+            // rather than retyped.
+            _writeError = ex.Message;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            _writeError = "The printer registry is unreachable · check the API is running, then save again.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RemoveAsync(PrinterDto printer)
+    {
+        _busy = true;
+        _writeError = null;
+        try
+        {
+            await Api.DeletePrinterAsync(printer.Id);
+            _confirmingRemove = false;
+            _selectedId = null;
+            await LoadAsync();
+        }
+        catch (PrinterRegistryException ex)
+        {
+            _writeError = ex.Message;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            _writeError = "The printer registry is unreachable · check the API is running, then try again.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>
+    /// Print one label to this row's printer.
+    ///
+    /// It goes through the host's transports and deliberately does not touch the host's
+    /// selection: PrintTestLabelToAsync publishes no condition and raises no event, so
+    /// the chip on the screen below keeps describing the printer this host prints to.
+    /// The whole answer is the outcome, rendered beside the control it was fired from.
+    /// </summary>
+    private async Task TestAsync(PrinterDto printer)
+    {
+        _testing = true;
+        _testResult = null;
+        try
+        {
+            var outcome = await HostPrinter.PrintTestLabelToAsync(
+                printer.Transport.ToString(),
+                printer.Address,
+                $"Back office · {printer.Name}");
+
+            _testOk = outcome.Printed;
+            _testResult = outcome.Condition.Message is { Length: > 0 } line
+                ? line
+                : outcome.Printed
+                    ? "Printed · the label is at the printer"
+                    : "Could not print · the transport gave no reason";
+        }
+        finally
+        {
+            _testing = false;
+        }
+    }
+
+    private static string RoleLabel(PrinterRole role) => role switch
+    {
+        PrinterRole.Receipts => "Receipts",
+        PrinterRole.Kitchen => "Kitchen",
+        PrinterRole.Bar => "Bar",
+        PrinterRole.Labels => "Labels",
+        _ => role.ToString()
+    };
+
+    private static string TransportLabel(PrinterTransportKind transport) => transport switch
+    {
+        PrinterTransportKind.Network => "Network",
+        PrinterTransportKind.Bluetooth => "Bluetooth",
+        _ => transport.ToString()
+    };
+
+    private void OnHostChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => HostPrinter.Changed -= OnHostChanged;
 }
