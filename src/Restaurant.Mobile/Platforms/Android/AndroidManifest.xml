@@ -12,4 +12,28 @@
 	     no ordinary app holds it — and it does not need to be. Declaring it is what
 	     the API asks for. -->
 	<uses-permission android:name="android.permission.BATTERY_STATS" />
+	<!-- Bluetooth, and the permissions differ by API level in a way that fails
+	     silently if it is got wrong (handbook Part II-A, Printer setup).
+
+	     API 31 and up: BLUETOOTH and BLUETOOTH_ADMIN are gone, replaced by the
+	     runtime pair BLUETOOTH_CONNECT and BLUETOOTH_SCAN. neverForLocation is an
+	     assertion that this app does not use a scan result to derive the user's
+	     position, which is true of finding a printer, and it is what lets the scan
+	     run without a location permission on those levels.
+
+	     Below 31: BLUETOOTH and BLUETOOTH_ADMIN are install-time and raise no
+	     dialog, but an inquiry additionally needs a location permission, because
+	     Android treats discovering nearby radios as locating the user - coarse
+	     from API 23, fine from API 29. Both are bounded by maxSdkVersion so a
+	     modern device is never asked for a location it does not need.
+
+	     The verified device in this fleet is API 28 and the target tablet is
+	     unknown, so both sets ship and BluetoothPrinterTransport requests the
+	     runtime half of whichever one is live. -->
+	<uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+	<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="30" />
+	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+	<uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
 </manifest>

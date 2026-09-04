@@ -1,0 +1,89 @@
+/* Development preview of Part II-A · Printer setup. Same frame idiom as
+   TerminalPreview: a fixed box at the device's own size on the ground, with the
+   hover lifts retracted inside it, because the terminal is touch and a preview
+   that shows a lift the device cannot produce is a preview that lies about the
+   device.
+
+   Every value is a token. A dev tool drawn in stray hex is a second palette on
+   the same page. */
+
+.pp {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-section);
+    padding: var(--upos-space-pad-panel);
+}
+
+.pp__head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+}
+
+.pp__kicker {
+    margin: 0;
+    font: var(--upos-type-label);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.pp__title {
+    margin: 0;
+    font: 800 32px/1.1 Archivo, system-ui, sans-serif;
+    letter-spacing: -.03em;
+    color: var(--upos-ink);
+}
+
+.pp__note {
+    margin: 0;
+    max-width: 78ch;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+.pp__note code {
+    font: 700 12px/1 ui-monospace, Menlo, monospace;
+}
+
+.pp__frame {
+    overflow: auto;
+    padding: var(--upos-space-gap-card);
+    border-radius: var(--upos-radius-panel);
+    background: var(--upos-ground);
+}
+
+/* 1440x900 is the terminal (Part II-A). The box does not scale to the window —
+   a scaled preview reads as a smaller terminal — so the frame scrolls instead. */
+.pp__device {
+    width: 1440px;
+    height: 900px;
+    flex: none;
+    border-radius: var(--upos-radius-panel);
+    box-shadow: var(--upos-shadow-card);
+}
+
+/* 393x785 is the Memor 20's reported viewport with both Android system bars
+   hidden, and it is what puts the shell below the 800px container step. */
+.pp__device--handheld {
+    width: 393px;
+    height: 785px;
+}
+
+/* The terminal has no hover, and the kit declares every :hover rule inside one
+   @media (hover:hover) guard that this browser satisfies. Retract them inside
+   the frame so what is on screen is what the device does: no transform, and
+   press feedback as the ripple tint (§8). */
+@media (hover: hover) {
+    .pp__device ::deep .u-btn:hover,
+    .pp__device ::deep .u-icon-btn:hover,
+    .pp__device ::deep .u-nav-item:hover,
+    .pp__device ::deep .u-data-row:hover {
+        transform: none;
+        box-shadow: var(--upos-shadow-card);
+    }
+
+    .pp__device ::deep .u-btn--primary:hover {
+        box-shadow: var(--upos-shadow-button);
+    }
+}

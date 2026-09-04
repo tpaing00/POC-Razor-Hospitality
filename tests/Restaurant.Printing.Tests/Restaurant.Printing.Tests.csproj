@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The bag ticket is the one part of printing that can be tested with no printer
+       in the room: BagTicket.Build is a pure function from a DTO to bytes, and the
+       Star Line command sequence is either in the stream or it is not. This project
+       exists so that the part most likely to be wrong is the part with tests on it.
+
+       It references Restaurant.UI.Shared, which is a Razor class library. Nothing
+       under test here is a component — the printing services are plain C# in that
+       library because they are what the components consume. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Restaurant.Shared\Restaurant.Shared.csproj" />
+    <ProjectReference Include="..\..\src\Restaurant.UI.Shared\Restaurant.UI.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

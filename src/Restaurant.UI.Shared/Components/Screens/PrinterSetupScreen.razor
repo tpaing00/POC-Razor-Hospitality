@@ -1,0 +1,309 @@
+@namespace Restaurant.UI.Shared.Components.Screens
+@using Restaurant.UI.Shared.Components.Upos
+@using Restaurant.UI.Shared.Services.Printing
+@implements IDisposable
+@inject IReceiptPrinter Printer
+
+@* Handbook Part II-A · Printer setup. "You pair this terminal with the ticket
+   printer beside it, see whether the pairing still works, and print a test label
+   before service rather than during it."
+
+   This screen is the destination only. The 76px top bar and the 78px bottom nav
+   belong to TerminalShell, and MORE is the destination that opens this one.
+
+   Why it is here and not in the back office: a Bluetooth bond is a fact about one
+   radio and one piece of glass. A manager's laptop cannot enumerate this tablet's
+   bonded devices, cannot open an RFCOMM socket from it, and cannot make the
+   printer beside it emit a label — a pairing screen that cannot pair is a form.
+   The back office's roadmap Devices destination is the venue's record of which
+   terminal claims which printer, read from a desk; it is a different screen doing
+   a different job, and neither can do the other's.
+
+   Every state on this screen is one the transport can prove. There is no green
+   READY that has not been earned by a byte going out and coming back: a printer
+   that has been chosen and never talked to reads NOT TESTED in the neutral chip,
+   which is §12's rule about the battery applied to a second reading — render the
+   reading, or render the absence of the reading, and never render a state nobody
+   measured.
+
+   Colour follows §4 and stops where §4 stops. Ready is green, printing is blue,
+   and the three failures are red because they are problems that exist. No
+   printer, not tested and searching take the neutral .u-pill instead of a fifth
+   hue: an unknown is not a fault, and painting it red would spend the one colour
+   that means something is wrong on something that merely has not happened yet. *@
+
+<div class="ps">
+    <div class="ps__col">
+
+        <header class="ps__head">
+            <p class="ps__kicker">MORE &middot; TERMINAL SETUP</p>
+            <h1 class="ps__title">Printer</h1>
+            <p class="ps__note">
+                The ticket printer paired with @TerminalId. Pairing belongs to this tablet, so it is
+                set here rather than in the back office.
+            </p>
+        </header>
+
+        @* ─── The paired printer ──────────────────────────────────────────── *@
+        <section class="ps__block" aria-labelledby="ps-paired">
+            <p class="ps__label" id="ps-paired">PAIRED PRINTER</p>
+
+            @if (Printer.Selected is { } selected)
+            {
+                <div class="ps__paired">
+                    <div class="ps__paired-id">
+                        <span class="ps__device-name">@selected.Name</span>
+                        <span class="ps__device-addr">@selected.Id</span>
+                    </div>
+                    @* §4 lends a hue to the five states that are statuses; the three
+                       that are the absence of one take the neutral .u-pill. *@
+                    @switch (Printer.Condition.State)
+                    {
+                        case PrinterState.Ready:
+                            <StatusChip Tone="StatusTone.Ready" Label="@Printer.Condition.Label" />
+                            break;
+                        case PrinterState.Printing:
+                            <StatusChip Tone="StatusTone.New" Label="@Printer.Condition.Label" />
+                            break;
+                        case PrinterState.Unreachable:
+                        case PrinterState.PaperOut:
+                        case PrinterState.Failed:
+                            <StatusChip Tone="StatusTone.Late" Label="@Printer.Condition.Label" />
+                            break;
+                        default:
+                            <Pill Label="@Printer.Condition.Label" Bordered="true" />
+                            break;
+                    }
+                </div>
+
+                @if (Printer.Condition.Message is { Length: > 0 } line)
+                {
+                    <p class="ps__line @LineTone">@line</p>
+                }
+
+                @* Destructive, and Ghost with the label at --upos-ink (§11). The red
+                   arrives on the confirming step and never at rest. *@
+                @if (_confirmingForget)
+                {
+                    <p class="ps__line ps__line--warn">
+                        Forget @selected.Name &middot; this terminal stops printing until another is paired
+                    </p>
+                    <div class="ps__row-actions">
+                        <UposButton Variant="ButtonVariant.Ghost"
+                                    MinHeight="48"
+                                    Label="Keep it"
+                                    OnClick="@(() => _confirmingForget = false)" />
+                        <UposButton Variant="ButtonVariant.Secondary"
+                                    MinHeight="48"
+                                    Label="Forget this printer"
+                                    OnClick="ForgetAsync" />
+                    </div>
+                }
+                else
+                {
+                    @* §11: a destructive control is Ghost with its label forced to
+                       --upos-ink. The wrapper is what carries that override, because
+                       scoped CSS cannot reach inside a child component's element
+                       without ::deep and ::deep needs something to descend from. *@
+                    <div class="ps__destructive">
+                        <UposButton Variant="ButtonVariant.Ghost"
+                                    MinHeight="48"
+                                    Label="Forget this printer"
+                                    OnClick="@(() => _confirmingForget = true)" />
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="ps__statement">No printer paired. Pick one below and print a test label.</p>
+
+                @if (Printer.Condition.Message is { Length: > 0 } why && !Printer.IsSupported)
+                {
+                    <p class="ps__line ps__line--warn">@why</p>
+                }
+            }
+        </section>
+
+        @* ─── The list ────────────────────────────────────────────────────── *@
+        <section class="ps__block" aria-labelledby="ps-nearby">
+            <div class="ps__block-head">
+                <p class="ps__label" id="ps-nearby">PRINTERS THIS TABLET CAN SEE</p>
+                <button type="button"
+                        class="ps__scan"
+                        disabled="@(_busy || !Printer.IsSupported)"
+                        @onclick="ScanAsync">@ScanLabel</button>
+            </div>
+
+            @if (Printer.Found.Count == 0)
+            {
+                <p class="ps__statement">
+                    @(Printer.Condition.State == PrinterState.Searching
+                        ? "Searching."
+                        : "Nothing found yet. Pair the printer in Android settings, then scan.")
+                </p>
+            }
+            else
+            {
+                <div class="ps__rows">
+                    @foreach (var device in Printer.Found)
+                    {
+                        var isSelected = Printer.Selected?.Id == device.Id;
+                        <DataRow Selected="isSelected" OnClick="@(() => SelectAsync(device))">
+                            <ChildContent>
+                                <span class="ps__device-name">@device.Name</span>
+                                <span class="ps__device-addr">@device.Id</span>
+                            </ChildContent>
+                            <Trailing>
+                                @if (isSelected)
+                                {
+                                    <Pill Label="PAIRED HERE" Bordered="true" />
+                                }
+                                else if (!device.IsPaired)
+                                {
+                                    @* An unbonded device connects through Android's own
+                                       pairing prompt on the first write. Said before it
+                                       happens rather than after. *@
+                                    <Pill Label="NOT PAIRED" Bordered="true" />
+                                }
+                            </Trailing>
+                        </DataRow>
+                    }
+                </div>
+            }
+        </section>
+
+        @* ─── Test print ──────────────────────────────────────────────────── *@
+        <section class="ps__block" aria-labelledby="ps-test">
+            <p class="ps__label" id="ps-test">TEST PRINT</p>
+            <p class="ps__statement">
+                One label carrying this terminal&rsquo;s name, the time and a column ruler. If the
+                ruler wraps, the printer is not 48 columns wide and the ticket layout needs the
+                real number.
+            </p>
+
+            <UposButton Variant="ButtonVariant.Secondary"
+                        MinHeight="48"
+                        Disabled="@(_busy || Printer.Selected is null)"
+                        Label="@TestLabel"
+                        OnClick="TestAsync" />
+
+            @if (_testResult is { Length: > 0 })
+            {
+                <p class="ps__line @LineTone">@_testResult</p>
+            }
+        </section>
+
+        @* ─── What is not built ───────────────────────────────────────────── *@
+        <section class="ps__blocked">
+            <p class="ps__blocked-what">
+                One printer per terminal, and every line of the check on one label.
+            </p>
+            <p class="ps__blocked-needs">
+                Sending the grill&rsquo;s lines to the grill&rsquo;s printer needs a station on
+                <code>OrderItem</code> and a printer per station. <code>OrderItem</code> carries a
+                menu item, a quantity, a price and a free-text note, so nothing can say where a line
+                is cooked (GAP-06).
+            </p>
+            <p class="ps__blocked-needs">
+                Which terminal claims which printer, and when each was last seen, is the back
+                office&rsquo;s <code>Devices</code> record. That is a new table contradicting nothing
+                in the current schema, so it is API work rather than a gap &mdash; the same ruling
+                the Employees, Devices, Settings spec already makes.
+            </p>
+        </section>
+    </div>
+</div>
+
+@code {
+    /// <summary>This terminal's id, printed on the test label so a label found on a
+    /// bench says which tablet produced it.</summary>
+    [Parameter] public string TerminalId { get; set; } = "Counter 2";
+
+    private bool _busy;
+    private bool _confirmingForget;
+    private string? _testResult;
+
+    private string ScanLabel => Printer.Condition.State == PrinterState.Searching ? "SEARCHING" : "+ SCAN";
+
+    private string TestLabel => Printer.Condition.State == PrinterState.Printing
+        ? "Printing"
+        : "Print a test label";
+
+    /// <summary>A failure inks the line red, everything else stays quiet. §4: red marks
+    /// a problem that exists.</summary>
+    private string? LineTone => Printer.Condition.State switch
+    {
+        PrinterState.Unreachable or PrinterState.PaperOut or PrinterState.Failed => "ps__line--warn",
+        PrinterState.Ready => "ps__line--ok",
+        _ => null
+    };
+
+    protected override void OnInitialized() => Printer.Changed += OnPrinterChanged;
+
+    /// <summary>
+    /// The list is asked for once, when the screen opens, so a terminal that already
+    /// has a printer shows it beside the others rather than behind a tap. Discovery is
+    /// awaited off the UI thread by the transport; nothing here blocks a render.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        if (Printer.IsSupported && Printer.Found.Count == 0)
+        {
+            await Printer.DiscoverAsync();
+        }
+    }
+
+    private async Task ScanAsync()
+    {
+        _busy = true;
+        _testResult = null;
+        try
+        {
+            await Printer.DiscoverAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SelectAsync(PrinterDevice device)
+    {
+        _testResult = null;
+        _confirmingForget = false;
+        await Printer.SelectAsync(device);
+    }
+
+    private async Task ForgetAsync()
+    {
+        _confirmingForget = false;
+        _testResult = null;
+        await Printer.ForgetAsync();
+    }
+
+    /// <summary>
+    /// The one action on this screen that proves anything. It reports on the screen and
+    /// never in a log — a log is a place a server on a terminal cannot look.
+    /// </summary>
+    private async Task TestAsync()
+    {
+        _busy = true;
+        _testResult = null;
+        try
+        {
+            var outcome = await Printer.PrintTestLabelAsync(TerminalId);
+            _testResult = outcome.Condition.Message
+                ?? (outcome.Printed
+                    ? "Printed · the label is at the printer"
+                    : "Could not print");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OnPrinterChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Printer.Changed -= OnPrinterChanged;
+}

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -9,6 +9,14 @@
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <!-- The ticket builder's wrap and its column ruler are implementation detail of
+       BagTicket and stay internal, but they are also the two pieces of layout logic
+       most worth testing on their own: a wrap that loses its indent and a ruler that
+       is not the column count are both invisible until a label comes out wrong. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Restaurant.Printing.Tests" />
   </ItemGroup>
 
   <ItemGroup>

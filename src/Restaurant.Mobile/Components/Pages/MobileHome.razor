@@ -9,15 +9,46 @@
    Hybrid is Razor in a WebView: one implementation, two hosts, and no second
    copy of the behaviour to keep in step.
 
-   What this page owns is what a host owns: the route, and the two literals that
-   belong to this device rather than to the screen. CustomerName and TableId keep
-   the values the POC terminal has always posted; nothing on the screen collects
-   either, and the floor plan that would pick a table is not built in this pass.
+   What this page owns is what a host owns: the route, the two literals that
+   belong to this device rather than to the screen, and which destination is on
+   screen. CustomerName and TableId keep the values the POC terminal has always
+   posted; nothing on the screen collects either, and the floor plan that would
+   pick a table is not built in this pass.
 
    The shell is TerminalShell — the 76px top bar and 78px bottom nav every
-   terminal destination inherits (Part II-A). ORDER is the destination that
-   exists, so it is the active one and the only one that answers a tap. *@
+   terminal destination inherits (Part II-A). Two of its five destinations are
+   built: ORDER, and MORE, which opens Printer setup.
 
-<TerminalShell ActiveDestination="order">
-    <OrderEntryScreen CustomerName="Mobile User" TableId="1" />
+   **Both destinations stay mounted and one is hidden.** The obvious form is an
+   @@if that swaps them, and it loses the check: a server who taps MORE mid-order
+   to find out why the label did not come out would come back to an empty cart,
+   because unmounting OrderEntryScreen takes its lines with it. Those lines are
+   component state and there is nowhere else for them to live until the offline
+   queue exists (GAP-10), so the destination that is not on screen is hidden
+   rather than destroyed. The wrapper is a plain block: TerminalShell's
+   `.shell__body ::deep > *` already gives a destination flex:1 and the two
+   min-0s, and it applies to whatever the direct child happens to be. *@
+
+<TerminalShell ActiveDestination="@_destination" OnNavigate="Navigate" TerminalId="@TerminalId">
+    <div style="@(_destination == "order" ? null : "display:none")">
+        <OrderEntryScreen CustomerName="Mobile User" TableId="1" />
+    </div>
+    <div style="@(_destination == "more" ? null : "display:none")">
+        <PrinterSetupScreen TerminalId="@TerminalId" />
+    </div>
 </TerminalShell>
+
+@code {
+    /// <summary>This terminal's id. It names the tablet in the shell's top bar and on
+    /// the test label, so a label found on a bench says which device produced it.</summary>
+    private const string TerminalId = "Counter 2";
+
+    private string _destination = "order";
+
+    /// <summary>
+    /// The shell reports the tap and the host decides what is on screen. Only built
+    /// destinations reach here — BottomNav renders the other three as spans rather
+    /// than buttons — so this needs no allow-list of its own.
+    /// </summary>
+    private void Navigate(string key) => _destination = key;
+}
