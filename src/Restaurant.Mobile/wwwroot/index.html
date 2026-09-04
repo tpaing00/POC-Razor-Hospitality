@@ -34,5 +34,35 @@
 	</div>
 
 	<script src="_framework/blazor.webview.js" autostart="false"></script>
+
+	<!-- Theming contract (handbook §11, §12): data-theme and data-accent live on
+	     <html>, and the shell flips them through interop. Light theme is the
+	     absence of data-theme.
+
+	     This is the same three lines the back office serves from App.razor, and it
+	     is duplicated rather than shared because the two hosts have no shared host
+	     page between them: one is a Razor component, the other a static file the
+	     WebView loads. The contract is one sentence long and it is stated
+	     identically in both places.
+
+	     On this host TerminalShell calls setTheme with whatever ISystemTheme reads
+	     off Android (Part II-A · Order entry · Dark). There is no setAccent caller
+	     here — the terminal has no accent picker — but the function is kept so the
+	     two hosts expose the same object, and so a venue accent applied at app
+	     start has somewhere to go. -->
+	<script>
+		window.uposShell = {
+			setTheme: function (theme) {
+				if (theme) {
+					document.documentElement.setAttribute('data-theme', theme);
+				} else {
+					document.documentElement.removeAttribute('data-theme');
+				}
+			},
+			setAccent: function (accent) {
+				document.documentElement.setAttribute('data-accent', accent);
+			}
+		};
+	</script>
 </body>
 </html>

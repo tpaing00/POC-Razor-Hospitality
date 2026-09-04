@@ -45,15 +45,17 @@
    renders per §4 — opacity .5, the name struck, the price replaced by the red
    86'D pill, no response to a tap, and its place in the grid kept.
 
-   Part II-A · Handheld, provisional. Below 800px of shell width the three panes
-   cannot be drawn — 170 + 380 + 44 + 190 is 784px before one item is on the
-   glass — so the rail becomes a chip row, the grid becomes one column in the
-   ListRow form, and the cart collapses behind a summary bar that opens it as a
-   bottom sheet. The whole of it is in OrderEntryScreen.razor.css behind one
-   @@container query on the shell. Nothing in this file asks how wide anything
-   is: the markup below is identical at both widths but for the summary bar, the
-   scrim and the sheet's close control, which are in the DOM at every width and
-   display:none above the step. _cartOpen is the sheet's own state, not a device
+   Part II-A · Width bands. Two steps below the 1440 design, both container
+   queries on the shell in OrderEntryScreen.razor.css. At or below 1000px the
+   three panes cannot be drawn — 170 + 380 + 44 + two 190px tiles and their gap
+   is 990px — so the rail becomes a chip row and the cart narrows to 340px
+   beside it: the tablet band, drawn for the 10.1" panel in portrait. At or
+   below 770px the two panes cannot be drawn either, so the grid becomes one
+   column in the ListRow form and the cart collapses behind a summary bar that
+   opens it as a bottom sheet: the handheld band. Nothing in this file asks how
+   wide anything is: the markup below is identical at all three widths but for
+   the summary bar, the scrim and the sheet's close control, which are in the
+   DOM at every width and display:none above the handheld step. _cartOpen is the sheet's own state, not a device
    check — at 1440 nothing can set it, because the control that sets it is not
    rendered visible there. *@
 

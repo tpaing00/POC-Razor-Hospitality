@@ -1,4 +1,4 @@
-using Restaurant.Blazor.Components;
+﻿using Restaurant.Blazor.Components;
 using Restaurant.UI.Shared.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -60,6 +60,14 @@ builder.Services.AddScoped<DashboardDataSource>();
 // reading in the blocked treatment, which is what keeps the preview honest about
 // being a preview.
 builder.Services.AddSingleton<IDeviceStatus, UnknownDeviceStatus>();
+
+// The same shell now follows the OS theme on the device (Part II-A · Order entry ·
+// Dark). This host has no OS theme worth reading: it is a browser, and the theme
+// on this page is already the rail toggle's to set. Registering the answer that
+// says so is what keeps the two from fighting — the preview renders the terminal
+// in whichever theme the person working on it has chosen, and nothing stamps
+// data-theme over their choice.
+builder.Services.AddSingleton<ISystemTheme, UnknownSystemTheme>();
 
 var app = builder.Build();
 

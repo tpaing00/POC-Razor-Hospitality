@@ -143,6 +143,20 @@
   --upos-border: #2a323b;
   --upos-ink: #eef1f5;
   --upos-ink-subtle: #8b95a1;
+  /* §4's on-dark set is not the kitchen display's private palette — "the on-dark
+     set applies to every dark surface", and a themed terminal is one. The hues do
+     not move: --upos-status-late is #ec3013 in both themes, because a color that
+     means late means it under any lighting (§11's theming contract). What moves is
+     the ink role, which is what the -text suffix names. #ae1800 is the pairing for
+     text on white and lands at 2.2:1 over --upos-surface here; #159548 lands at
+     4.1:1, under §11's AA floor. Each takes the on-dark ink of its own hue —
+     values §4 already publishes for a dark surface, not new colors. Fired is the
+     one §4 lists as unchanged on dark: --upos-status-fired holds 5.4:1 on
+     --upos-panel-dark, so the role is pointed back at the fill rather than left on
+     the light pairing #d95f06, which is 3.4:1 here. */
+  --upos-status-fired-text: var(--upos-status-fired);
+  --upos-status-late-text: var(--upos-kds-status-late);
+  --upos-status-ready-text: var(--upos-kds-status-ready);
 }
 
 body {

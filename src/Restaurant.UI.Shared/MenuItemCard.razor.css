@@ -107,6 +107,15 @@
     color: var(--upos-accent-deep);
 }
 
+/* §3: "On dark surfaces, accents are --upos-on-dark-accent." --upos-accent-deep
+   is the light-surface pairing and lands at 1.5:1 over --upos-surface on dark,
+   which §11 makes binding. The accent presets do not move between themes, so the
+   ink role does — the Menu manager's own rule, applied to the one price on this
+   card that is inked in the accent rather than in --upos-ink. */
+:root[data-theme="dark"] .u-menu-card--tile .u-menu-card__price {
+    color: var(--upos-on-dark-accent);
+}
+
 /* Press feedback on a touch surface is the ripple tint, no transform (§8). The
    lift above stays inside the kit's @media (hover:hover) guard. */
 .u-menu-card--tappable {
@@ -184,9 +193,11 @@
 }
 
 /* ─── Handheld ───────────────────────────────────────────────────────────────
-   Part II-A · Order entry · Handheld, provisional. Below 800px of shell width
+   Part II-A · Order entry · Handheld, provisional. Below 770px of shell width
    Order entry's grid is one column, and a 190px square stretched to 365px is a
-   card with a hole in it — so the tile takes the ListRow form.
+   card with a hole in it — so the tile takes the ListRow form. The tablet band
+   above it keeps the tile: two abreast at 800px is a grid, and this rule is for
+   the width where a grid is no longer available.
 
    It takes it from the container, not from the Layout parameter. Part III rules
    that no component takes a touch flag, because a host should not have to
@@ -201,7 +212,7 @@
    state cannot be written into a selector, so the recipe is restated here and
    named as the restatement it is. */
 
-@container upos-shell (max-width: 800px) {
+@container upos-shell (max-width: 770px) {
 
     .u-menu-card--tile {
         flex-direction: row;

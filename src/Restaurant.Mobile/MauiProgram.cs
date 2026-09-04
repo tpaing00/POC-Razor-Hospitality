@@ -69,6 +69,17 @@ public static class MauiProgram
         // container.
         builder.Services.AddSingleton<IDeviceStatus, MauiDeviceStatus>();
 
+        // The terminal follows Android's own light/dark setting, and it does that
+        // through the same split: Restaurant.UI.Shared asks the question as
+        // ISystemTheme and cannot answer it, so this host registers the reader for
+        // Application.RequestedTheme (handbook §12, Part II-A · Order entry ·
+        // Dark). There is no manual toggle on the terminal to register alongside
+        // it — the OS setting is the whole of the control.
+        //
+        // Singleton for the same reason: one platform event subscription, one
+        // device behind it, disposed with the container.
+        builder.Services.AddSingleton<ISystemTheme, MauiSystemTheme>();
+
         // Add local SQLite database (we'll create this next)
         var dbPath = Path.Combine(FileSystem.AppDataDirectory, "restaurant.db");
         // builder.Services.AddDbContext<LocalDbContext>(options =>

@@ -324,41 +324,88 @@
     width: 100%;
 }
 
-/* ─── Handheld ───────────────────────────────────────────────────────────────
-   Part II-A · Order entry · Handheld, provisional. Below 800px of shell width
-   the three panes cannot be drawn: 170px rail + 380px cart + 44px grid padding
-   + one 190px tile is 784px before the screen holds an item, and the device
-   that prompted this — a Datalogic Memor 20, 1080x2160 at 440dpi — reports a
-   393x785 CSS-pixel portrait viewport, the whole panel, because the terminal
-   hides Android's status and navigation bars rather than sharing the screen
-   with them (MainActivity; Part II-A · Handheld, "The host's system bars"). It
-   reported 393x713 while the window was fitted to those bars. Nothing in this
-   file was written against either height — the rules below size from the
-   container and from tokens, which is why the viewport could change underneath
-   them without a single value moving.
+/* ─── Tablet portrait ────────────────────────────────────────────────────────
+   Part II-A · Order entry · Width bands. Two panes, at or below 1000px of shell
+   width: the rail collapses into the handheld's chip row, the cart stays
+   exactly where it is, and the menu takes what is left.
 
-   The step measures the shell, not the viewport, so the back office's fixed
-   1440x900 preview frame keeps the wide layout however narrow the browser
-   window gets, and a 393px preview frame in the same window gets this one.
+   1000px is the three-pane's own floor. 170px rail + 380px cart + 44px of grid
+   padding + two 190px tiles and their 16px gap is 990px, rounded up to the
+   nearest hundred. Under 990 the wide layout does not stop working so much as
+   stop meaning anything: the grid falls to one column and draws a single tile
+   stretched to 306px at 900px of shell, which is a card with a hole in it.
 
-   Nothing below is a new pattern. The chip row is Part II-D's browse strip with
-   flex:1 dropped, the summary bar is Part II-D's bag bar at staff scale, the
-   row is MenuItemCard's shipped ListRow form, and the sheet is the .u-drawer
-   recipe with its inset flipped to the bottom edge — same fl-rise, same
-   --upos-dur-slow, no seventh keyframe (§8). */
+   The named case is the 10.1" Android tablet in portrait — 800x1280 CSS px,
+   whichever of the two panel classes it ships (see the preview's presets) — and
+   it is a fleet candidate, so this band is a design and not a degradation. What
+   it is designed against is a shape: not enough width for three panes, and a
+   great deal of height. 800x1280 has 1126px between the two bars, which is 226
+   more than the whole 1440x900 terminal is tall.
 
-@container upos-shell (max-width: 800px) {
+   Of the two arrangements that fit, this is the one that spends the height.
+   · Cart docked, rail as chips — this. The check is never off the glass, which
+     is the one thing the 1440 design is built around, and the height pays for
+     it: measured in the preview, the line list stands 11 lines before it
+     scrolls at 800x1280, against 5 at 1440x900. What it costs is a grid column
+     — two tiles abreast at 208px rather than the three a full-width grid would
+     fit.
+   · Cart as the handheld's sheet, grid full width. It buys the third column and
+     it pays for it by putting the check behind a tap and a scrim, on a device
+     with 600px of spare height to stand the check in. It also carries the
+     summary bar, the sheet, the scrim and the three-lines rule, all of which
+     exist because a 393px phone has nowhere to put a panel. This one has
+     somewhere.
+   A third arrangement — the cart docked along the bottom edge under a full-width
+   grid — was not taken. The cart is a tall narrow column of three bands and a
+   wide short box is a different component, so it would be a redesign rather than
+   a reuse, and it turns the 1440 design's left-to-right reading through ninety
+   degrees for no gain the height does not already give.
 
-    /* Three columns become one, in three rows: the chip row, the menu taking
-       the height, the summary bar above the shell's nav. */
+   So the tablet is the 1440 layout with one move made, and the move is the
+   handheld's: the rail becomes the chip row. Everything in this block that is
+   not the grid template is a rule the handheld already ships, hoisted up a band
+   so both spend it.
+
+   The cart is 340px and not 380px, and the number comes from the check rather
+   than from the leftovers. A cart line is two boxes: 211.94px of controls at
+   flex:none — the send button and the stepper bracketing a 52px total slot — and
+   the title, which takes the rest and wraps. Measured across the seed menu, the
+   widest line's own min-content is 293.24px, and with the page step at each side
+   this pane gives the line 312px. So no line overflows the pane, with 18.76px in
+   hand; what the narrower pane costs is wrapping, and it is a difference of
+   degree — the 1440 pane gives 336px and already wraps two of the same five
+   names.
+
+   The grid is then checked against what is left, not sized by it: 800 less the
+   cart and less the page step at each grid edge is 432px, and two 190px tiles
+   with their 16px gap need 396. It clears by 36px and draws two tiles at 208px,
+   measured — more slack than a classic scrollbar takes on a host that draws one,
+   which matters because a grid sized to the last pixel drops to a single
+   stretched column the moment anything takes a pixel from it. 376 is the widest
+   cart two tiles would still allow and it was not taken: it leaves the grid
+   nothing, and the check gains 36px it does not need to hold a line. */
+
+@container upos-shell (max-width: 1000px) {
+
+    /* Two columns and two rows. The chip row sits over the menu column only, so
+       the cart keeps the full-height panel identity it has at 1440 — one pane,
+       top bar to bottom nav, behind its left hairline — and the chip row's own
+       bottom hairline reads as the menu's header rule rather than as a band
+       laid across the whole destination. */
     .oe {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .oe__cart {
+        grid-column: 2;
+        grid-row: 1 / -1;
     }
 
     /* Category rail, 170px column -> a horizontally scrolling chip row, 62px.
        The rail's inset fill and its hairline, turned through ninety degrees. */
     .oe__rail {
+        grid-column: 1;
         grid-row: 1;
         flex-direction: row;
         align-items: center;
@@ -381,8 +428,9 @@
     /* Same fill, same type, same selection rule as the rail's buttons; only the
        radius moves. A row of --upos-radius-inset buttons reads as a broken grid
        and a row of pills reads as a filter strip. flex:none rather than the
-       kiosk strip's flex:1 — at 393px the categories run off the edge rather
-       than share it. */
+       kiosk strip's flex:1 — the categories run off the edge rather than share
+       it, which is what makes the row scrollable at 393px and keeps a chip the
+       same size at 800px as it is at 393px. */
     .oe__cat {
         flex: none;
         padding: 0 16px;
@@ -391,15 +439,97 @@
     }
 
     .oe__menu {
+        grid-column: 1;
         grid-row: 2;
     }
 
+    /* The grid takes the page step at its edges instead of the panel's 22px.
+       That is 16px back for the tiles, and it is what makes 340 a comfortable
+       cart rather than a tight one: with 22px the grid has 20px of slack over
+       two tiles at 800, which a scrollbar eats. */
     .oe__menu-head {
         padding: var(--upos-space-gap-row) var(--upos-space-page) 0;
     }
 
     .oe__grid-scroll {
         padding: var(--upos-space-page);
+    }
+
+    /* The check's three bands keep the panel's 18px vertical rhythm and take the
+       page step at their sides. 22px is a 1440 figure; on a 340px pane it is 13%
+       of the width, and those 16px are 16px the line gets to spend on a name.
+       The sheet one band down makes the same move on all four edges, and states
+       its reason as "a page has a page step" — this pane is not a page, so only
+       the sides move. */
+    .oe__cart-head,
+    .oe__lines,
+    .oe__foot {
+        padding-inline: var(--upos-space-page);
+    }
+
+    /* The cart's header wraps at this width. The design header is three things
+       — label, loyalty, close — and it would fit one row; what does not fit is
+       this build's two blocked GAP pills, which are development annotations
+       rather than screen content. So the second row is an artefact of the
+       scaffolding, and the order is set rather than left to the source. */
+    .oe__cart-head {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        row-gap: var(--upos-space-gap-row);
+    }
+
+    .oe__check {
+        flex: 1 1 auto;
+    }
+
+    .oe__cart-head > .oe__blocked-pill {
+        order: 1;
+    }
+}
+
+/* ─── Handheld ───────────────────────────────────────────────────────────────
+   Part II-A · Order entry · Handheld, provisional. Below 770px of shell width
+   the two panes cannot be drawn either: a 340px cart, the page step at each
+   grid edge and two 190px tiles with their 16px gap is 764px, rounded up to the
+   nearest ten, and under it the menu is back to one stretched tile. The device
+   that prompted this rule — a Datalogic Memor 20, 1080x2160 at 440dpi — reports
+   a 393x785 CSS-pixel portrait viewport, the whole panel, because the terminal
+   hides Android's status and navigation bars rather than sharing the screen
+   with them (MainActivity; Part II-A · Handheld, "The host's system bars"). It
+   reported 393x713 while the window was fitted to those bars. Nothing in this
+   file was written against either height — the rules below size from the
+   container and from tokens, which is why the viewport could change underneath
+   them without a single value moving.
+
+   The step was 800 until the tablet band was drawn, which was the three-pane's
+   floor (170 + 380 + 44 + one 190px tile = 784, rounded up) rather than the
+   two-pane's. It had to move regardless of where the tablet landed: max-width
+   is inclusive, the 10.1" tablet in portrait is exactly 800px wide, and a step
+   at 800 hands the named tablet the phone's layout.
+
+   The step measures the shell, not the viewport, so the back office's fixed
+   1440x900 preview frame keeps the wide layout however narrow the browser
+   window gets, and a 393px preview frame in the same window gets this one.
+
+   This block is written after the tablet's and overrides it where they differ.
+   Overlapping max-widths rather than an exclusive pair, because a shell 769.5px
+   wide matches an inclusive max-width:1000 and misses an exclusive
+   min-width:770, and a band scheme with a half-pixel hole in it renders the
+   wide layout on a narrow screen.
+
+   Nothing below is a new pattern. The chip row is Part II-D's browse strip with
+   flex:1 dropped, the summary bar is Part II-D's bag bar at staff scale, the
+   row is MenuItemCard's shipped ListRow form, and the sheet is the .u-drawer
+   recipe with its inset flipped to the bottom edge — same fl-rise, same
+   --upos-dur-slow, no seventh keyframe (§8). */
+
+@container upos-shell (max-width: 770px) {
+
+    /* Two columns become one, in three rows: the chip row, the menu taking the
+       height, the summary bar above the shell's nav. */
+    .oe {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
     }
 
     /* One column, not auto-fill. A row grid at minmax would put two abreast at
@@ -552,27 +682,11 @@
         display: none;
     }
 
-    /* The sheet's header wraps to two rows at this width, and the order is set
-       rather than left to the source: the check label and the close control
-       take the first row, and the loyalty control drops under them. The design
-       header is three things — label, loyalty, close — and it would fit one
-       row; what does not fit is this build's two blocked GAP pills, which are
-       development annotations rather than screen content, so the second row is
-       an artefact of the scaffolding and not of the design. */
-    .oe__cart-head {
-        flex-wrap: wrap;
-        align-items: flex-start;
-        row-gap: var(--upos-space-gap-row);
-    }
-
-    .oe__check {
-        flex: 1 1 auto;
-    }
-
-    .oe__cart-head > .oe__blocked-pill {
-        order: 1;
-    }
-
+    /* The header's wrap is the tablet band's, one step up — the same two blocked
+       GAP pills push the same second row. What this band adds is the close
+       control, which only a sheet needs, taking the first row's right end so the
+       label and the close read as a header and the loyalty control drops under
+       them. */
     .oe__sheet-close {
         display: inline-flex;
         order: 0;
@@ -591,6 +705,22 @@
         backdrop-filter: blur(var(--upos-blur-scrim));
         -webkit-backdrop-filter: blur(var(--upos-blur-scrim));
     }
+}
+
+/* ─── Dark ───────────────────────────────────────────────────────────────────
+   §11's theming contract: one attribute on <html> and nothing else moves. Every
+   surface, border and ink on this screen is a token the theme already redefines,
+   and the status inks moved with it in the kit (upos-tokens.css), so this file
+   has one rule to add.
+
+   §3: "On dark surfaces, accents are --upos-on-dark-accent." The summary bar's
+   running total is --upos-accent-deep, which is a light-surface pairing — on
+   dark it lands at 1.5:1 over --upos-surface, and §11 makes AA binding. The
+   accent presets themselves do not move between themes, so the ink role does.
+   This is the Menu manager's own rule, on the one element on this screen that
+   inks money in the accent. */
+:root[data-theme="dark"] .oe__summary-total {
+    color: var(--upos-on-dark-accent);
 }
 
 /* §8: under prefers-reduced-motion, fl-rise reduces to an opacity fade. */
