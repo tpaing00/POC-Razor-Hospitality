@@ -110,7 +110,16 @@ namespace Restaurant.Api.Controllers
             };
 
             _context.Printers.Add(printer);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(await ClashAsync(dto.Transport, address, excludingId: null)
+                                ?? RaceLine(address));
+            }
 
             // The stored row, not the posted one. The address is normalized on the way
             // in, so a client that echoed its own payload would render a different
@@ -138,7 +147,15 @@ namespace Restaurant.Api.Controllers
             printer.IsActive = dto.IsActive;
             printer.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(await ClashAsync(dto.Transport, address, excludingId: id)
+                                ?? RaceLine(address));
+            }
 
             // The updated row comes back rather than 204, because the address may have
             // been normalized and the caller has to render what is stored.
@@ -223,7 +240,12 @@ namespace Restaurant.Api.Controllers
         /// </summary>
         private async Task<string?> ClashAsync(PrinterTransportKind transport, string address, int? excludingId)
         {
+            // No tracking: this reads one name to build a sentence with, and it runs
+            // after a failed SaveChanges as well as before a good one, where pulling a
+            // second copy of a row into the change tracker would be the last thing the
+            // context needs.
             var existing = await _context.Printers
+                .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Transport == transport
                                           && p.Address == address
                                           && (excludingId == null || p.Id != excludingId));
@@ -233,6 +255,21 @@ namespace Restaurant.Api.Controllers
 
             return $"'{existing.Name}' is already registered at {address} · edit that printer, or give this one a different address";
         }
+
+        /// <summary>
+        /// The sentence for the race the check above cannot close.
+        ///
+        /// <see cref="ClashAsync"/> reads and then the write happens, so two callers
+        /// registering one address at the same moment can both pass it. The unique
+        /// index is what stops the second landing — and without this the second caller
+        /// would get a 500 carrying a database error, for a situation that is not a
+        /// fault and has an obvious next move. The re-read usually names the row that
+        /// won; this line is for the case where even that has changed underneath.
+        ///
+        /// The failing context is refused as a whole, so nothing is half-written.
+        /// </summary>
+        private static string RaceLine(string address) =>
+            $"Another printer was registered at {address} while this was being saved · reload the list, then edit that printer";
 
         private static PrinterDto ToDto(Printer printer) => new()
         {
