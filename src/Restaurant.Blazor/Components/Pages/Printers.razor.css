@@ -108,11 +108,11 @@
 }
 
 .pr__row-tags {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: var(--upos-space-gap-chip);
     flex-wrap: wrap;
-    justify-content: flex-end;
+    margin-top: var(--upos-space-gap-chip);
 }
 
 .pr__empty {

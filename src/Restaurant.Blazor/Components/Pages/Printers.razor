@@ -86,11 +86,15 @@
                         <DataRow Selected="isSelected"
                                  BorderTone="@(printer.IsActive ? null : StatusTone.Late)"
                                  OnClick="@(() => Select(printer.Id))">
+                            @* The pills sit under the address rather than in the row's
+                               trailing slot. A 320px column holds a name, a mono
+                               address and two pills, and hard-righting the pills takes
+                               the width the name needs — a printer called "Kitchen
+                               pass" wraps mid-phrase and the row stops being scannable,
+                               which is the one thing a list column is for. *@
                             <ChildContent>
                                 <span class="pr__row-name">@printer.Name</span>
                                 <span class="pr__row-addr">@printer.Address</span>
-                            </ChildContent>
-                            <Trailing>
                                 <span class="pr__row-tags">
                                     <Pill Label="@RoleLabel(printer.Role).ToUpperInvariant()" Bordered="true" />
                                     @if (!printer.IsActive)
@@ -98,7 +102,7 @@
                                         <Pill Label="OUT OF SERVICE" Bordered="true" />
                                     }
                                 </span>
-                            </Trailing>
+                            </ChildContent>
                         </DataRow>
                     }
                 }
