@@ -1,0 +1,61 @@
+@page "/preview/printer"
+
+@* A development preview of a MAUI screen, not a back-office destination.
+
+   Part II-A · Printer setup is a terminal screen and it stays one: a Bluetooth
+   bond is a fact about one radio and one piece of glass, so the pairing surface
+   has to be on the device that holds the radio. This route exists so the screen
+   can be worked on without an emulator, in the same way /preview/terminal
+   exists. It ships to no venue.
+
+   **This preview cannot pair anything and does not pretend to.** A desktop
+   browser has no Bluetooth radio, so Restaurant.Blazor registers
+   UnavailableReceiptPrinter (Program.cs) — the answer §12 calls for, in the same
+   shape as UnknownDeviceStatus: it finds nothing, selects nothing, refuses to
+   print, and says the refusal is about this host rather than about the printer.
+   What is on screen below is therefore the real no-printer state, drawn by the
+   real component, and it is the state a terminal is in before anybody has paired
+   anything.
+
+   The separate route rather than a MORE tap inside /preview/terminal is
+   deliberate: the terminal preview is a frame at a chosen device size and
+   navigating it would hide the screen this page exists to show. *@
+
+<PageTitle>Printer setup preview</PageTitle>
+
+<section class="panel pp">
+
+    <header class="pp__head">
+        <p class="pp__kicker">DEVELOPMENT PREVIEW &middot; MAUI SCREEN</p>
+        <h1 class="pp__title">Terminal &middot; Printer setup</h1>
+        <p class="pp__note">
+            The <code>PrinterSetupScreen</code> <code>Restaurant.Mobile</code> renders behind
+            <code>MORE</code>, stood up at the terminal&rsquo;s 1440&times;900. This host registers
+            <code>UnavailableReceiptPrinter</code>, so every control below is the honest
+            no-printer state and nothing here can reach a printer.
+        </p>
+    </header>
+
+    <div class="pp__frame">
+        <div class="pp__device">
+            <TerminalShell ActiveDestination="more">
+                <PrinterSetupScreen TerminalId="Counter 2" />
+            </TerminalShell>
+        </div>
+    </div>
+
+    @* The handheld width, because the screen has a container-query step of its
+       own and a step nobody looks at is a step that breaks. Same rule the
+       terminal preview follows: two shells at two widths in one browser window,
+       both correct at once, because the query asks the shell how wide it is and
+       not the viewport. *@
+    <p class="pp__kicker">393 &times; 785 &middot; handheld &middot; provisional</p>
+
+    <div class="pp__frame pp__frame--handheld">
+        <div class="pp__device pp__device--handheld">
+            <TerminalShell ActiveDestination="more">
+                <PrinterSetupScreen TerminalId="Counter 2" />
+            </TerminalShell>
+        </div>
+    </div>
+</section>

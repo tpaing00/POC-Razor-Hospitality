@@ -1,0 +1,236 @@
+/* Part II-A · Printer setup. One column inside the shell, 640px maximum measure,
+   centred, with its own scroll. Four inset blocks in the Menu manager's geometry —
+   a --upos-space-pad-inset block at --upos-radius-card under a 700/11px .08em
+   label — which this screen inherits rather than inventing.
+
+   Every value is a token or a Part II-A literal. No :hover rule in this file: the
+   terminal has no hover, and press feedback is the ripple tint with no transform
+   (§8). */
+
+.ps {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--upos-surface);
+}
+
+.ps__col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-card);
+    /* 640px is the measure, not a token: it is a line length, and §6 sets type
+       roles rather than column widths. Part II-A carries it as a screen literal
+       the way Order entry carries 170 and 380. */
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--upos-space-pad-panel);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+
+.ps__head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ps__kicker {
+    margin: 0;
+    font: var(--upos-type-label);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+.ps__title {
+    margin: 0;
+    font: var(--upos-type-display);
+    color: var(--upos-ink);
+}
+
+.ps__note {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink-subtle);
+}
+
+/* ─── Blocks ─────────────────────────────────────────────────────────────── */
+
+.ps__block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row-loose);
+    padding: var(--upos-space-pad-card-sm);
+    border-radius: var(--upos-radius-card);
+    background: var(--upos-surface-inset);
+}
+
+.ps__block-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+}
+
+.ps__label {
+    margin: 0;
+    font: 700 11px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--upos-ink-subtle);
+}
+
+/* The bare text button the Devices spec puts on a list header. --upos-accent-deep
+   ink, no fill, and --upos-touch-terminal of tappable height even though the glyph
+   is 11px, because §11's minimum is about the finger and not about the label. */
+.ps__scan {
+    min-height: var(--upos-touch-terminal);
+    padding: 0 var(--upos-space-gap-inline);
+    border: none;
+    border-radius: var(--upos-radius-inset);
+    background: transparent;
+    color: var(--upos-accent-deep);
+    font: 700 11px/1 Archivo, system-ui, sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    -webkit-tap-highlight-color: var(--upos-press-tint);
+    transition: background var(--upos-dur-fast) var(--upos-ease);
+}
+
+.ps__scan:active:not(:disabled) {
+    background: var(--upos-press-tint);
+}
+
+.ps__scan:disabled {
+    color: var(--upos-ink-subtle);
+    cursor: default;
+}
+
+/* ─── The paired printer ─────────────────────────────────────────────────── */
+
+.ps__paired {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+}
+
+.ps__paired-id {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.ps__device-name {
+    display: block;
+    font: var(--upos-type-heading);
+    color: var(--upos-ink);
+    overflow-wrap: anywhere;
+}
+
+/* The address is an identifier, so it takes the mono role. It is --upos-ink at .66
+   rather than --upos-ink-subtle: §12 records that --upos-ink-subtle measures 3.0:1
+   on --upos-surface and misses AA, and the step the kit already ships measures
+   5.2:1 on the inset. An address somebody has to read off the glass and match
+   against a label on a printer is text carrying information. */
+.ps__device-addr {
+    display: block;
+    font: 700 11.5px/1.4 ui-monospace, Menlo, monospace;
+    color: var(--upos-ink);
+    opacity: .66;
+    overflow-wrap: anywhere;
+}
+
+.ps__rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+}
+
+/* The rows sit on --upos-surface-inset, so the kit's white row still reads as a
+   row. --upos-touch-terminal is §11's floor and the kit's row does not set one. */
+.ps__rows ::deep .u-data-row {
+    min-height: var(--upos-touch-terminal);
+}
+
+.ps__row-actions {
+    display: flex;
+    gap: var(--upos-space-gap-row);
+    flex-wrap: wrap;
+}
+
+/* §11: a destructive control is Ghost at rest with its label at --upos-ink. There
+   is no red variant, and the red arrives on the confirming step. */
+.ps__destructive ::deep .u-btn {
+    color: var(--upos-ink);
+}
+
+/* ─── Lines ──────────────────────────────────────────────────────────────── */
+
+/* A statement, not an apology (§10). */
+.ps__statement {
+    margin: 0;
+    font: var(--upos-type-body);
+    color: var(--upos-ink);
+}
+
+/* One line, the cause and the next move, middot-separated (§10). */
+.ps__line {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.ps__line--warn {
+    color: var(--upos-status-late-text);
+}
+
+.ps__line--ok {
+    color: var(--upos-status-ready-text);
+}
+
+/* ─── What is not built ──────────────────────────────────────────────────── */
+
+.ps__blocked {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+    padding: var(--upos-space-pad-inset);
+    border: 1px dashed var(--upos-border);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface-inset);
+}
+
+.ps__blocked-what {
+    margin: 0;
+    font: var(--upos-type-row);
+    color: var(--upos-ink);
+}
+
+.ps__blocked-needs {
+    margin: 0;
+    font: 400 12px/1.5 Archivo, system-ui, sans-serif;
+    color: var(--upos-ink-subtle);
+}
+
+.ps__blocked-needs code {
+    font: 700 11.5px/1 ui-monospace, Menlo, monospace;
+}
+
+/* Part II-A · Handheld. Below 800px of shell width the padding drops to the page
+   step and the measure stops mattering, because the column is the screen. Nothing
+   else moves: the blocks are already one column. The query is on the shell's own
+   inline size, the same container Order entry's step reads, so this file never
+   asks how wide the viewport is. */
+@container upos-shell (max-width: 800px) {
+    .ps__col {
+        padding: var(--upos-space-page);
+        gap: var(--upos-space-gap-line);
+    }
+
+    .ps__title {
+        font: var(--upos-type-heading);
+    }
+}

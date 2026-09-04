@@ -1,0 +1,104 @@
+namespace Restaurant.UI.Shared.Services.Printing;
+
+/// <summary>
+/// What carries bytes to a printer. The seam this whole feature is built around.
+///
+/// **A network printer is a second implementation of this interface and nothing
+/// else.** The ticket builder, the setup screen, the state machine and the Star Line
+/// command bytes all sit above it and none of them knows what is underneath, because
+/// a socket is a socket whether the far end is a radio or an IP address. The
+/// TSP143IV-UEWB has Wi-Fi, Bluetooth, USB and Ethernet on the same box; today
+/// <c>Restaurant.Mobile</c> registers the Bluetooth Classic RFCOMM implementation and
+/// the rest are one class each.
+///
+/// <c>Restaurant.UI.Shared</c> owns the interface and implements none of it, which is
+/// the same arrangement §12 sets up for <c>IDeviceStatus</c>: the library asks, the
+/// host answers, and the dependency never points the other way.
+/// </summary>
+public interface IPrinterTransport
+{
+    /// <summary>What this transport is, for the one line the setup screen prints under
+    /// the block. "Bluetooth", "Network".</summary>
+    string Name { get; }
+
+    /// <summary>
+    /// Whether the transport can be used at all right now — the radio is on, the
+    /// permission is granted, the platform has the API. A transport that cannot run
+    /// says so in <paramref name="reason"/> as one line naming the cause and the next
+    /// move (§10), and the screen renders that instead of an error.
+    /// </summary>
+    bool IsAvailable(out string? reason);
+
+    /// <summary>
+    /// The devices this transport can offer. Over Bluetooth that is the bonded set
+    /// plus whatever an inquiry turns up; over TCP it would be whatever answered a
+    /// subnet probe, or the one address a person typed.
+    /// </summary>
+    Task<IReadOnlyList<PrinterDevice>> DiscoverAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Open a connection to one device. Throws on failure, carrying the platform's own
+    /// message — the caller turns that into a <see cref="PrinterCondition"/> rather
+    /// than paraphrasing a fault it did not see.
+    /// </summary>
+    Task<IPrinterConnection> ConnectAsync(string deviceId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// One open connection. Write bytes, optionally read what the printer pushes back.
+/// Disposed after every job: holding a Bluetooth socket open across a shift is how a
+/// terminal ends up unable to reconnect after the printer power-cycles.
+/// </summary>
+public interface IPrinterConnection : IAsyncDisposable
+{
+    Task WriteAsync(byte[] payload, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Read whatever the printer has already sent, up to <paramref name="wait"/>.
+    /// Returns an empty array when nothing arrived, which is a normal answer and not a
+    /// failure: a printer with Automatic Status Back switched off says nothing, and
+    /// the caller reports that the status was unreadable rather than reporting health.
+    /// </summary>
+    Task<byte[]> ReadAsync(TimeSpan wait, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Where the chosen printer is remembered between launches. One address and one name,
+/// which is the whole of it — anything larger is the venue's device registry, which
+/// the handbook's Devices spec rules is additive API work rather than this screen's
+/// job.
+/// </summary>
+public interface IPrinterPreference
+{
+    string? DeviceId { get; }
+
+    string? DeviceName { get; }
+
+    void Remember(string deviceId, string deviceName);
+
+    void Forget();
+}
+
+/// <summary>
+/// The preference for a host with nowhere to put one. It remembers for as long as the
+/// process lives and no longer, which is the honest behaviour for the back office's
+/// preview — a browser tab has no printer to remember.
+/// </summary>
+public sealed class InMemoryPrinterPreference : IPrinterPreference
+{
+    public string? DeviceId { get; private set; }
+
+    public string? DeviceName { get; private set; }
+
+    public void Remember(string deviceId, string deviceName)
+    {
+        DeviceId = deviceId;
+        DeviceName = deviceName;
+    }
+
+    public void Forget()
+    {
+        DeviceId = null;
+        DeviceName = null;
+    }
+}

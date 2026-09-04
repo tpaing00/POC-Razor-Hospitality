@@ -1,11 +1,13 @@
-@namespace Restaurant.UI.Shared.Components.Screens
+﻿@namespace Restaurant.UI.Shared.Components.Screens
 @using System.Globalization
 @using Restaurant.Shared.Models.Dtos
 @using Restaurant.UI.Shared.Components.Upos
 @using Restaurant.UI.Shared.Services
+@using Restaurant.UI.Shared.Services.Printing
 @implements IDisposable
 @inject MenuDataSource Menu
 @inject RestaurantApiService Api
+@inject IReceiptPrinter Printer
 
 @* Handbook Part II-A · Order entry. "You build a check here — pick a category,
    tap items, adjust the lines, send them to the kitchen and charge." Three
@@ -256,6 +258,19 @@
                 <p class="oe__sent-line">Order #@_sentOrder &middot; sent to the kitchen</p>
             }
 
+            @* The bag label's own line, and only when there is something to say.
+               A label that printed is in somebody's hand, so silence is the
+               confirmation (§11's rule for the offline pill, applied here). A
+               label that did not print is a line that names the cause and where
+               to fix it, and it never reverses or hides the send above: the
+               check reached the kitchen, and a cutter that did not fire does not
+               undo that. With no printer paired the send says nothing at all,
+               because a terminal that was never meant to print is not failing. *@
+            @if (_printNote is { Length: > 0 })
+            {
+                <p class="@(_printFailed ? "oe__error" : "oe__gap-line")">@_printNote</p>
+            }
+
             @* SEND ALL is the POC's real write: one CreateOrderDto carrying one
                OrderItemDto per line, posted to /api/orders. It confirms as SENT
                TO KITCHEN for 2s, and the check draws its check as an inline SVG
@@ -339,6 +354,11 @@
     private bool _confirming;
     private string? _sendError;
     private int? _sentOrder;
+
+    /// <summary>The bag label's outcome, when it has one worth a line.</summary>
+    private string? _printNote;
+
+    private bool _printFailed;
     private string _category = string.Empty;
 
     /// <summary>
@@ -498,6 +518,14 @@
             _lines.Clear();
             _sentOrder = created?.Id;
             StartConfirmation();
+
+            // The bag label prints off the OrderDto the API returned, which is the
+            // first moment the order has a number at all — Part II-A · Bag ticket.
+            // It is awaited rather than fired and forgotten so a failure reaches the
+            // screen, and it is deliberately after StartConfirmation so the send
+            // confirms at the moment the write landed rather than at the moment a
+            // socket finished.
+            await PrintBagTicketAsync(created);
         }
         catch (Exception ex)
         {
@@ -506,6 +534,46 @@
         finally
         {
             _sending = false;
+        }
+    }
+
+    /// <summary>
+    /// One label for the order that just landed.
+    ///
+    /// Never throws into the send: printing is a peripheral and the check is already
+    /// with the kitchen, so the worst outcome here is a line on the screen. A terminal
+    /// with no printer paired says nothing — it is not failing, it was never asked to
+    /// print — and the setup screen behind MORE is where a paired printer's fault is
+    /// diagnosed, which is why the line points at it rather than restating it.
+    /// </summary>
+    private async Task PrintBagTicketAsync(OrderDto? created)
+    {
+        _printNote = null;
+        _printFailed = false;
+
+        if (created is null || Printer.Selected is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var outcome = await Printer.PrintBagTicketAsync(created);
+            if (!outcome.Printed)
+            {
+                _printFailed = true;
+                _printNote = $"Order #{created.Id} · sent · the bag label did not print · "
+                    + (outcome.Condition.Message ?? "see MORE");
+            }
+            else if (outcome.Condition.Message is { Length: > 0 } note)
+            {
+                _printNote = note;
+            }
+        }
+        catch (Exception ex)
+        {
+            _printFailed = true;
+            _printNote = $"Order #{created.Id} · sent · the bag label did not print · {Reason(ex)}";
         }
     }
 

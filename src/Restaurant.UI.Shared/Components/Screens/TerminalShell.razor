@@ -195,9 +195,9 @@
     </main>
 
     @* ─── Bottom nav, 78px ────────────────────────────────────────────────
-       ORDER · TABLES · PAYMENTS · CHANNELS · MORE. Order entry is the one
-       destination built in this pass, so the other four render inert rather
-       than answering a tap with nothing (§11 makes this nav the only
+       ORDER · TABLES · PAYMENTS · CHANNELS · MORE. Order entry and MORE are
+       the two destinations built in this pass, so the other three render inert
+       rather than answering a tap with nothing (§11 makes this nav the only
        full-screen transition in the flow, which is exactly why an item that
        goes nowhere cannot look live). *@
     <BottomNav Items="Destinations"
@@ -219,8 +219,9 @@
     /// <summary>The active destination's key. Exactly one is active.</summary>
     [Parameter] public string ActiveDestination { get; set; } = "order";
 
-    /// <summary>Raised when a built destination is tapped. Only ORDER is built in
-    /// this pass, so this fires with "order" and nothing else.</summary>
+    /// <summary>Raised when a built destination is tapped. ORDER and MORE are built
+    /// in this pass, so this fires with "order" or "more" and nothing else. The host
+    /// owns which destination is on screen; the shell only reports the tap.</summary>
     [Parameter] public EventCallback<string> OnNavigate { get; set; }
 
     /// <summary>
@@ -237,17 +238,37 @@
     private Timer? _clock;
 
     /// <summary>
-    /// The five destinations. Four carry Enabled false: the floor plan, payment,
-    /// channels and MORE are specced in Part II-A and not built in this pass.
+    /// The five destinations. Three carry Enabled false: the floor plan, payment and
+    /// channels are specced in Part II-A and not built in this pass. MORE is built —
+    /// it is the terminal's overflow and it opens Printer setup, which is where a
+    /// Bluetooth pairing has to be made because a bond is a fact about this radio and
+    /// this piece of glass (Part II-A · Printer setup).
     /// </summary>
     private IReadOnlyList<NavItem> Destinations => new[]
     {
-        new NavItem("order", "ORDER", OrderIcon),
+        new NavItem("order", "ORDER", OrderIcon) { Enabled = Reachable("order") },
         new NavItem("tables", "TABLES", TablesIcon) { Enabled = false },
         new NavItem("payments", "PAYMENTS", PaymentsIcon) { Enabled = false },
         new NavItem("channels", "CHANNELS", ChannelsIcon) { Enabled = false },
-        new NavItem("more", "MORE", MoreIcon) { Enabled = false }
+        new NavItem("more", "MORE", MoreIcon) { Enabled = Reachable("more") }
     };
+
+    /// <summary>
+    /// Whether a built destination can be reached from this shell.
+    ///
+    /// Being built is not the same as being reachable, and the difference is the
+    /// host. Restaurant.Mobile wires OnNavigate and both built destinations answer a
+    /// tap; the back office's two previews stand one destination up in a fixed frame
+    /// and wire nothing, so a tap there has nowhere to go and the item renders inert
+    /// rather than doing nothing quietly — the same rule the three unbuilt
+    /// destinations follow.
+    ///
+    /// The active destination is exempt because you are already on it: it has to keep
+    /// the fill that says so, and tapping where you already are is not a tap that goes
+    /// nowhere.
+    /// </summary>
+    private bool Reachable(string key) =>
+        OnNavigate.HasDelegate || string.Equals(key, ActiveDestination, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// The clock is wall time on the device, so it has to move. Half a minute is
