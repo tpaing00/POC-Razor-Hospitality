@@ -1,6 +1,8 @@
-﻿using Restaurant.Blazor.Components;
+using Restaurant.Blazor.Components;
 using Restaurant.UI.Shared.Services;
+using Restaurant.Blazor.Services.Printing;
 using Restaurant.UI.Shared.Services.Printing;
+using Restaurant.UI.Shared.Services.Printing.Network;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,13 +72,40 @@ builder.Services.AddSingleton<IDeviceStatus, UnknownDeviceStatus>();
 // data-theme over their choice.
 builder.Services.AddSingleton<ISystemTheme, UnknownSystemTheme>();
 
-// The same preview renders the printer setup screen, and a desktop browser has no
-// Bluetooth radio to reach a printer with. It registers the answer that says so
-// (handbook section 12). Nothing here invents a paired device: a preview that
-// reported a printer, accepted a test print and drew a green chip would be the one
-// placeholder in this product a person acts on - they would go to the venue
-// believing the pairing worked.
-builder.Services.AddSingleton<IReceiptPrinter, UnavailableReceiptPrinter>();
+// Printing from the back office. Two transports, aggregated, and every honest
+// distinction between them kept.
+//
+// THE THING TO UNDERSTAND FIRST: this is Blazor Server, so this C# runs in the
+// ASP.NET process and not in the browser. "Bluetooth in the back office" is
+// therefore the radio in the machine running this server - a counter PC, a
+// mini-PC in the office, or the POS device itself where the back office is served
+// from it. It is never the radio in the laptop of a manager who opened the page.
+// The screen says which host it speaks for, so that is stated rather than assumed.
+//
+// Registration order is the order a person sees the transports in, and the network
+// goes first because it is the one that works on every host. Bluetooth follows and
+// reports honestly when the host has no radio - which is a different fact from
+// "no printers found" and is rendered as a different sentence.
+builder.Services.AddSingleton<IPrinterTransport, TcpPrinterTransport>();
+builder.Services.AddSingleton<IPrinterTransport, WindowsBluetoothPrinterTransport>();
+
+// One selection for the host, held for as long as the process. A back office
+// serves one venue from one machine, so a process-wide choice is the right shape;
+// persisting it across restarts, and recording which terminal claims which
+// printer, is the Devices registry's job and is deliberately not this.
+builder.Services.AddSingleton<IPrinterPreference, InMemoryPrinterPreference>();
+
+builder.Services.AddSingleton<IReceiptPrinter>(sp => new TransportReceiptPrinter(
+    new CompositePrinterTransport(sp.GetServices<IPrinterTransport>()),
+    sp.GetRequiredService<IPrinterPreference>()));
+
+// The preview at /preview/printer is a different thing and keeps its own answer.
+// It exists to show the terminal's screen in its honest no-printer state, and now
+// that this host has real transports it has to be handed the unavailable one
+// explicitly - otherwise opening a preview would start scanning the venue's
+// network, and the screen it is previewing would stop being the state it exists
+// to show.
+builder.Services.AddSingleton<UnavailableReceiptPrinter>();
 
 var app = builder.Build();
 

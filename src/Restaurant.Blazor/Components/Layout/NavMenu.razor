@@ -1,4 +1,4 @@
-﻿@inject IJSRuntime JS
+@inject IJSRuntime JS
 
 @* Back-office rail — handbook Part II-B preamble and Part III · SideNav.
    224px, --upos-grad-dark, --upos-radius-panel, sticky at top:14px. The nav
@@ -31,6 +31,22 @@
                 <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
             </svg>
             <span>Menu</span>
+        </NavLink>
+
+        @* A real back-office destination, not a preview. It holds the venue's
+           registry of the printers it owns, and below it the printer this host
+           itself prints to — which it reaches over the venue network and over the
+           radio of the machine serving this server, a fact the screen states
+           rather than leaving to be inferred. *@
+        <NavLink class="u-nav-item" ActiveClass="is-active" href="printers"
+                 title="The venue's printers, and the one this host prints to">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 9V2h12v7" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" rx="1" />
+            </svg>
+            <span>Printers</span>
         </NavLink>
 
         @* Not a back-office destination: a development preview of the MAUI
@@ -93,8 +109,13 @@
             <span>Reports</span>
         </span>
 
+        @* Terminals, and no longer printers: the venue's printers moved to the
+           Printers destination above, which is built. What is left here is the
+           harder half — which terminal exists, which registry printer each one
+           claims, when each was last seen — and it waits on a terminal identity
+           the schema cannot issue (GAP-13) rather than on an endpoint. *@
         <span class="u-nav-item is-disabled" aria-disabled="true"
-              title="Devices · not built in this pass">
+              title="Devices · terminals and the printer each one claims · not built in this pass">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
                  stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="2" y="3" width="20" height="14" rx="2" />

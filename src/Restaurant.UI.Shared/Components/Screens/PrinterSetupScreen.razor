@@ -2,7 +2,7 @@
 @using Restaurant.UI.Shared.Components.Upos
 @using Restaurant.UI.Shared.Services.Printing
 @implements IDisposable
-@inject IReceiptPrinter Printer
+@inject IReceiptPrinter HostPrinter
 
 @* Handbook Part II-A · Printer setup. "You pair this terminal with the ticket
    printer beside it, see whether the pairing still works, and print a test label
@@ -36,13 +36,54 @@
     <div class="ps__col">
 
         <header class="ps__head">
-            <p class="ps__kicker">MORE &middot; TERMINAL SETUP</p>
+            <p class="ps__kicker">@Kicker</p>
             <h1 class="ps__title">Printer</h1>
-            <p class="ps__note">
-                The ticket printer paired with @TerminalId. Pairing belongs to this tablet, so it is
-                set here rather than in the back office.
-            </p>
+            <p class="ps__note">@Note</p>
         </header>
+
+        @* ─── Transports ──────────────────────────────────────────────────── *@
+        @* Only where there is more than one, which means only in the back office.
+           The terminal has one transport and Condition already carries its whole
+           story; a single row saying "Bluetooth · available" would be a line that
+           never changes.
+
+           This block is above the list on purpose. "This host has no Bluetooth
+           radio" and "no printers found" are different facts — the first is about
+           the machine and a person can act on it, the second is about the room —
+           and a screen that only had the list would make a reader infer the first
+           from the second. So the transports state themselves before the list has
+           a chance to be misread. *@
+        @if (Printer.Transports.Count > 1)
+        {
+            <section class="ps__block" aria-labelledby="ps-transports">
+                <p class="ps__label" id="ps-transports">HOW THIS HOST CAN REACH A PRINTER</p>
+
+                <div class="ps__transports">
+                    @foreach (var transport in Printer.Transports)
+                    {
+                        <div class="ps__transport">
+                            <div class="ps__transport-id">
+                                <span class="ps__device-name">@transport.Name</span>
+                                @if (transport.Reason is { Length: > 0 } blocked)
+                                {
+                                    <span class="ps__line ps__line--warn">@blocked</span>
+                                }
+                            </div>
+                            @if (transport.Available)
+                            {
+                                <StatusChip Tone="StatusTone.Ready" Label="AVAILABLE" />
+                            }
+                            else
+                            {
+                                <Pill Label="UNAVAILABLE" Bordered="true" />
+                            }
+                        </div>
+                    }
+                </div>
+
+                <p class="ps__line">@HostNote</p>
+            </section>
+        }
 
         @* ─── The paired printer ──────────────────────────────────────────── *@
         <section class="ps__block" aria-labelledby="ps-paired">
@@ -53,7 +94,7 @@
                 <div class="ps__paired">
                     <div class="ps__paired-id">
                         <span class="ps__device-name">@selected.Name</span>
-                        <span class="ps__device-addr">@selected.Id</span>
+                        <span class="ps__device-addr">@selected.Display</span>
                     </div>
                     @* §4 lends a hue to the five states that are statuses; the three
                        that are the absence of one take the neutral .u-pill. *@
@@ -115,11 +156,18 @@
             }
             else
             {
-                <p class="ps__statement">No printer paired. Pick one below and print a test label.</p>
+                <p class="ps__statement">@NoPrinterStatement</p>
 
-                @if (Printer.Condition.Message is { Length: > 0 } why && !Printer.IsSupported)
+                @* Anything the condition has to say that the statement above has not
+                   already said. Without this, a failure with nothing selected has
+                   nowhere to appear — a rejected address, or a discovery that would not
+                   run, would be swallowed and the person would be left retyping. The
+                   comparison against the statement is what stops the default line being
+                   printed twice. *@
+                @if (Printer.Condition.Message is { Length: > 0 } why &&
+                     !string.Equals(why, NoPrinterStatement, StringComparison.Ordinal))
                 {
-                    <p class="ps__line ps__line--warn">@why</p>
+                    <p class="ps__line @(LineTone ?? "ps__line--warn")">@why</p>
                 }
             }
         </section>
@@ -127,7 +175,7 @@
         @* ─── The list ────────────────────────────────────────────────────── *@
         <section class="ps__block" aria-labelledby="ps-nearby">
             <div class="ps__block-head">
-                <p class="ps__label" id="ps-nearby">PRINTERS THIS TABLET CAN SEE</p>
+                <p class="ps__label" id="ps-nearby">@ListLabel</p>
                 <button type="button"
                         class="ps__scan"
                         disabled="@(_busy || !Printer.IsSupported)"
@@ -139,7 +187,7 @@
                 <p class="ps__statement">
                     @(Printer.Condition.State == PrinterState.Searching
                         ? "Searching."
-                        : "Nothing found yet. Pair the printer in Android settings, then scan.")
+                        : EmptyHint)
                 </p>
             }
             else
@@ -151,26 +199,83 @@
                         <DataRow Selected="isSelected" OnClick="@(() => SelectAsync(device))">
                             <ChildContent>
                                 <span class="ps__device-name">@device.Name</span>
-                                <span class="ps__device-addr">@device.Id</span>
+                                @* Display, never Id. Aggregating transports makes the id
+                                   a routing key with a prefix on it; the address is what
+                                   somebody matches against a label on a printer. *@
+                                <span class="ps__device-addr">@device.Display</span>
                             </ChildContent>
                             <Trailing>
-                                @if (isSelected)
-                                {
-                                    <Pill Label="PAIRED HERE" Bordered="true" />
-                                }
-                                else if (!device.IsPaired)
-                                {
-                                    @* An unbonded device connects through Android's own
-                                       pairing prompt on the first write. Said before it
-                                       happens rather than after. *@
-                                    <Pill Label="NOT PAIRED" Bordered="true" />
-                                }
+                                <span class="ps__row-tags">
+                                    @* Which transport found it. Two printers with
+                                       similar names on a host running both a network
+                                       and a radio are told apart by nothing else. *@
+                                    @if (device.Transport is { Length: > 0 } via)
+                                    {
+                                        <Pill Label="@via.ToUpperInvariant()" Bordered="true" />
+                                    }
+                                    @if (isSelected)
+                                    {
+                                        <Pill Label="SELECTED" Bordered="true" />
+                                    }
+                                    else if (device.PairingNote is { Length: > 0 })
+                                    {
+                                        @* Only where the transport says pairing is the
+                                           thing standing in the way — a Bluetooth
+                                           device the platform does not hold a bond for.
+                                           A network printer has no pairing, so it takes
+                                           no pill: nothing is standing in the way of it
+                                           except a test label, and every row on this
+                                           list is in that position. *@
+                                        <Pill Label="NOT PAIRED" Bordered="true" />
+                                    }
+                                </span>
                             </Trailing>
                         </DataRow>
                     }
                 </div>
             }
         </section>
+
+        @* ─── An address somebody typed ───────────────────────────────────── *@
+        @* Rendered only where a transport takes one, which is the network transport
+           and not the radio: a Bluetooth bond is the platform's own record and
+           there is no address to read off the printer.
+
+           This is the degradation path, and it is on the screen rather than behind
+           a link because the networks it exists for are the ones where nothing else
+           on this screen works. Multicast is dropped between VLANs, blocked by
+           client isolation on a shared access point, and absent on a printer
+           somebody gave a static address on another subnet. In every one of those
+           a person can still read the address off the printer's self-test page. *@
+        @if (Printer.SupportsAddressEntry)
+        {
+            <section class="ps__block" aria-labelledby="ps-address">
+                <p class="ps__label" id="ps-address">ADD A PRINTER BY ADDRESS</p>
+                <p class="ps__statement">
+                    Hold the printer&rsquo;s FEED button while switching it on to print its self-test
+                    page. The address is on it.
+                </p>
+
+                <div class="ps__field">
+                    <input class="ps__input"
+                           type="text"
+                           inputmode="url"
+                           autocomplete="off"
+                           spellcheck="false"
+                           placeholder="192.168.1.50"
+                           aria-label="Printer address"
+                           disabled="@_busy"
+                           @bind="_address"
+                           @bind:event="oninput"
+                           @onkeydown="AddressKeyAsync" />
+                    <UposButton Variant="ButtonVariant.Secondary"
+                                MinHeight="48"
+                                Disabled="@(_busy || string.IsNullOrWhiteSpace(_address))"
+                                Label="Add"
+                                OnClick="AddAddressAsync" />
+                </div>
+            </section>
+        }
 
         @* ─── Test print ──────────────────────────────────────────────────── *@
         <section class="ps__block" aria-labelledby="ps-test">
@@ -194,6 +299,8 @@
         </section>
 
         @* ─── What is not built ───────────────────────────────────────────── *@
+        @if (ShowLimits)
+        {
         <section class="ps__blocked">
             <p class="ps__blocked-what">
                 One printer per terminal, and every line of the check on one label.
@@ -205,12 +312,15 @@
                 is cooked (GAP-06).
             </p>
             <p class="ps__blocked-needs">
-                Which terminal claims which printer, and when each was last seen, is the back
-                office&rsquo;s <code>Devices</code> record. That is a new table contradicting nothing
-                in the current schema, so it is API work rather than a gap &mdash; the same ruling
-                the Employees, Devices, Settings spec already makes.
+                The venue&rsquo;s list of the printers it owns is the back office&rsquo;s
+                <code>Printers</code> registry, and it is built. What it does not hold is which
+                terminal claims which printer, or when each was last seen: that is the
+                <code>Devices</code> record, and it needs a terminal identity nothing can issue
+                yet (GAP-13). Nothing in the back office changes the pairing above &mdash; this
+                tablet&rsquo;s printer is chosen here or not at all.
             </p>
         </section>
+        }
     </div>
 </div>
 
@@ -219,9 +329,73 @@
     /// bench says which tablet produced it.</summary>
     [Parameter] public string TerminalId { get; set; } = "Counter 2";
 
+    /// <summary>
+    /// The printer to drive, where it is not the host's own.
+    ///
+    /// **This exists for one caller and it is worth naming.** `/preview/printer`
+    /// renders this screen to show its honest no-printer state, and the back office
+    /// host now registers real transports — so without an override, opening a preview
+    /// would start a scan of the venue's network and the screen would stop being the
+    /// state the preview exists to show. The preview hands in
+    /// `UnavailableReceiptPrinter` and gets back exactly what it did before.
+    /// </summary>
+    [Parameter] public IReceiptPrinter? PrinterOverride { get; set; }
+
+    /// <summary>The line above the title. The terminal's is its nav destination; the
+    /// back office's is the venue.</summary>
+    [Parameter] public string Kicker { get; set; } = "MORE · TERMINAL SETUP";
+
+    /// <summary>The sentence under the title. Null takes the terminal's, which names
+    /// the tablet and says why pairing belongs to it.</summary>
+    [Parameter] public string? Note { get; set; }
+
+    /// <summary>The list's label. Whose eyes are doing the seeing differs by host, and
+    /// a back office saying "this tablet" would be wrong about the machine it is
+    /// speaking for.</summary>
+    [Parameter] public string ListLabel { get; set; } = "PRINTERS THIS TABLET CAN SEE";
+
+    /// <summary>What an empty list says next. The next move differs by host: pair in
+    /// Android settings on the terminal, check the cable and the subnet in the back
+    /// office.</summary>
+    [Parameter] public string EmptyHint { get; set; } =
+        "Nothing found yet. Pair the printer in Android settings, then scan.";
+
+    /// <summary>The sentence under the transport rows, naming which machine's radio and
+    /// network these are. Only rendered where there is more than one transport.</summary>
+    [Parameter] public string HostNote { get; set; } =
+        "These are this device's own radio and network.";
+
+    /// <summary>
+    /// Whether opening the screen starts a scan.
+    ///
+    /// **True on the terminal and false in the back office, and the difference is what
+    /// a scan costs.** The terminal's scan reads a bonded list the platform already
+    /// holds — it is free, and a screen that made a server tap for it would be asking
+    /// for a tap that buys nothing. The back office's scan is a multicast query and,
+    /// where that finds nothing, a bounded sweep of the subnet; doing that every time
+    /// somebody opens a page, or every time a Blazor circuit reconnects, is exactly the
+    /// hammering a restaurant network must not get. So there it waits to be asked.
+    /// </summary>
+    [Parameter] public bool ScanOnOpen { get; set; } = true;
+
+    /// <summary>Whether to render the closing block about what printing cannot do yet.
+    /// The terminal shows it; a host that is not the terminal would be restating
+    /// somebody else's caveats.</summary>
+    [Parameter] public bool ShowLimits { get; set; } = true;
+
+    /// <summary>The host's printer unless a caller handed one in. Every reference in
+    /// the markup goes through here.</summary>
+    private IReceiptPrinter Printer => PrinterOverride ?? HostPrinter;
+
+    /// <summary>The statement under PAIRED PRINTER when nothing is chosen. Held as a
+    /// constant because the line below it is only drawn when the condition has
+    /// something else to say, and that comparison needs the exact text.</summary>
+    private const string NoPrinterStatement = "No printer paired. Pick one below and print a test label.";
+
     private bool _busy;
     private bool _confirmingForget;
     private string? _testResult;
+    private string _address = string.Empty;
 
     private string ScanLabel => Printer.Condition.State == PrinterState.Searching ? "SEARCHING" : "+ SCAN";
 
@@ -238,7 +412,55 @@
         _ => null
     };
 
-    protected override void OnInitialized() => Printer.Changed += OnPrinterChanged;
+    protected override void OnInitialized()
+    {
+        Note ??= $"The ticket printer paired with {TerminalId}. Pairing belongs to this tablet, so it is " +
+                 "set here rather than in the back office.";
+
+        Printer.Changed += OnPrinterChanged;
+    }
+
+    /// <summary>Enter adds the address, because a field with a button beside it that
+    /// ignores Enter is a field people type into twice.</summary>
+    private async Task AddressKeyAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await AddAddressAsync();
+        }
+    }
+
+    /// <summary>
+    /// Record what was typed and select it. It never throws — an address that will not
+    /// parse comes back as the condition's own sentence, which is the transport's
+    /// wording and not a paraphrase of it.
+    /// </summary>
+    private async Task AddAddressAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_address))
+        {
+            return;
+        }
+
+        _busy = true;
+        _testResult = null;
+        _confirmingForget = false;
+        try
+        {
+            await Printer.AddByAddressAsync(_address);
+
+            // Cleared only when it was accepted, so a rejected address is still in the
+            // field to be corrected rather than retyped.
+            if (Printer.Condition.State != PrinterState.Failed)
+            {
+                _address = string.Empty;
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
 
     /// <summary>
     /// The list is asked for once, when the screen opens, so a terminal that already
@@ -247,7 +469,7 @@
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        if (Printer.IsSupported && Printer.Found.Count == 0)
+        if (ScanOnOpen && Printer.IsSupported && Printer.Found.Count == 0)
         {
             await Printer.DiscoverAsync();
         }
@@ -292,10 +514,16 @@
         try
         {
             var outcome = await Printer.PrintTestLabelAsync(TerminalId);
-            _testResult = outcome.Condition.Message
-                ?? (outcome.Printed
+
+            // The condition's own line is already rendered under the paired printer, so
+            // repeating it here prints the same sentence twice one above the other.
+            // What this block is for is the case the condition has no words for: a
+            // print that worked and said nothing.
+            _testResult = outcome.Condition.Message is { Length: > 0 }
+                ? null
+                : outcome.Printed
                     ? "Printed · the label is at the printer"
-                    : "Could not print");
+                    : "Could not print";
         }
         finally
         {

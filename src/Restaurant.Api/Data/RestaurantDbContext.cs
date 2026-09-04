@@ -16,6 +16,15 @@ public class RestaurantDbContext : DbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
+    /// <summary>
+    /// The venue's printers. Handbook Part II-B · Printers.
+    ///
+    /// The first table added after InitialCreate, and deliberately additive: it has no
+    /// foreign key into any existing table and no existing table gains a column, so
+    /// every current query, projection and caller behaves exactly as it did.
+    /// </summary>
+    public DbSet<Printer> Printers => Set<Printer>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -71,7 +80,34 @@ public class RestaurantDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // Configure Printer
+        //
+        // The venue's printer registry. Additive in the strict sense: no relationship
+        // to any existing entity, and nothing above is touched.
+        modelBuilder.Entity<Printer>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(PrinterAddress.MaxNameLength);
+            entity.Property(e => e.Address).IsRequired().HasMaxLength(PrinterAddress.MaxLength);
+
+            // Transport and Address together are the printer. A registry whose whole
+            // purpose is to be the venue's one record of a device must not hold two
+            // records of one device — the second is the row somebody edits while the
+            // first is the row that is used. The controller checks this before writing
+            // so the caller gets a sentence rather than a database error, and the index
+            // is what makes the check true rather than merely likely.
+            //
+            // A printer that genuinely serves two jobs is a routing question, and
+            // nothing routes today (GAP-06); two rows would be a guess at that answer
+            // rather than the answer.
+            entity.HasIndex(e => new { e.Transport, e.Address }).IsUnique();
+        });
+
         // Seed initial data
+        //
+        // Printers are deliberately absent from it. A seeded printer row would be the
+        // product claiming the venue owns a device it does not, and a person would
+        // discover the claim was false by walking to a printer that is not there.
         SeedData(modelBuilder);
     }
 
