@@ -1,11 +1,13 @@
-@namespace Restaurant.UI.Shared.Components.Screens
+﻿@namespace Restaurant.UI.Shared.Components.Screens
 @using System.Globalization
 @using Restaurant.Shared.Models.Dtos
 @using Restaurant.UI.Shared.Components.Upos
 @using Restaurant.UI.Shared.Services
+@using Restaurant.UI.Shared.Services.Printing
 @implements IDisposable
 @inject MenuDataSource Menu
 @inject RestaurantApiService Api
+@inject IReceiptPrinter Printer
 
 @* Handbook Part II-A · Order entry. "You build a check here — pick a category,
    tap items, adjust the lines, send them to the kitchen and charge." Three
@@ -45,15 +47,17 @@
    renders per §4 — opacity .5, the name struck, the price replaced by the red
    86'D pill, no response to a tap, and its place in the grid kept.
 
-   Part II-A · Handheld, provisional. Below 800px of shell width the three panes
-   cannot be drawn — 170 + 380 + 44 + 190 is 784px before one item is on the
-   glass — so the rail becomes a chip row, the grid becomes one column in the
-   ListRow form, and the cart collapses behind a summary bar that opens it as a
-   bottom sheet. The whole of it is in OrderEntryScreen.razor.css behind one
-   @@container query on the shell. Nothing in this file asks how wide anything
-   is: the markup below is identical at both widths but for the summary bar, the
-   scrim and the sheet's close control, which are in the DOM at every width and
-   display:none above the step. _cartOpen is the sheet's own state, not a device
+   Part II-A · Width bands. Two steps below the 1440 design, both container
+   queries on the shell in OrderEntryScreen.razor.css. At or below 1000px the
+   three panes cannot be drawn — 170 + 380 + 44 + two 190px tiles and their gap
+   is 990px — so the rail becomes a chip row and the cart narrows to 340px
+   beside it: the tablet band, drawn for the 10.1" panel in portrait. At or
+   below 770px the two panes cannot be drawn either, so the grid becomes one
+   column in the ListRow form and the cart collapses behind a summary bar that
+   opens it as a bottom sheet: the handheld band. Nothing in this file asks how
+   wide anything is: the markup below is identical at all three widths but for
+   the summary bar, the scrim and the sheet's close control, which are in the
+   DOM at every width and display:none above the handheld step. _cartOpen is the sheet's own state, not a device
    check — at 1440 nothing can set it, because the control that sets it is not
    rendered visible there. *@
 
@@ -254,6 +258,19 @@
                 <p class="oe__sent-line">Order #@_sentOrder &middot; sent to the kitchen</p>
             }
 
+            @* The bag label's own line, and only when there is something to say.
+               A label that printed is in somebody's hand, so silence is the
+               confirmation (§11's rule for the offline pill, applied here). A
+               label that did not print is a line that names the cause and where
+               to fix it, and it never reverses or hides the send above: the
+               check reached the kitchen, and a cutter that did not fire does not
+               undo that. With no printer paired the send says nothing at all,
+               because a terminal that was never meant to print is not failing. *@
+            @if (_printNote is { Length: > 0 })
+            {
+                <p class="@(_printFailed ? "oe__error" : "oe__gap-line")">@_printNote</p>
+            }
+
             @* SEND ALL is the POC's real write: one CreateOrderDto carrying one
                OrderItemDto per line, posted to /api/orders. It confirms as SENT
                TO KITCHEN for 2s, and the check draws its check as an inline SVG
@@ -337,6 +354,11 @@
     private bool _confirming;
     private string? _sendError;
     private int? _sentOrder;
+
+    /// <summary>The bag label's outcome, when it has one worth a line.</summary>
+    private string? _printNote;
+
+    private bool _printFailed;
     private string _category = string.Empty;
 
     /// <summary>
@@ -496,6 +518,14 @@
             _lines.Clear();
             _sentOrder = created?.Id;
             StartConfirmation();
+
+            // The bag label prints off the OrderDto the API returned, which is the
+            // first moment the order has a number at all — Part II-A · Bag ticket.
+            // It is awaited rather than fired and forgotten so a failure reaches the
+            // screen, and it is deliberately after StartConfirmation so the send
+            // confirms at the moment the write landed rather than at the moment a
+            // socket finished.
+            await PrintBagTicketAsync(created);
         }
         catch (Exception ex)
         {
@@ -504,6 +534,46 @@
         finally
         {
             _sending = false;
+        }
+    }
+
+    /// <summary>
+    /// One label for the order that just landed.
+    ///
+    /// Never throws into the send: printing is a peripheral and the check is already
+    /// with the kitchen, so the worst outcome here is a line on the screen. A terminal
+    /// with no printer paired says nothing — it is not failing, it was never asked to
+    /// print — and the setup screen behind MORE is where a paired printer's fault is
+    /// diagnosed, which is why the line points at it rather than restating it.
+    /// </summary>
+    private async Task PrintBagTicketAsync(OrderDto? created)
+    {
+        _printNote = null;
+        _printFailed = false;
+
+        if (created is null || Printer.Selected is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var outcome = await Printer.PrintBagTicketAsync(created);
+            if (!outcome.Printed)
+            {
+                _printFailed = true;
+                _printNote = $"Order #{created.Id} · sent · the bag label did not print · "
+                    + (outcome.Condition.Message ?? "see MORE");
+            }
+            else if (outcome.Condition.Message is { Length: > 0 } note)
+            {
+                _printNote = note;
+            }
+        }
+        catch (Exception ex)
+        {
+            _printFailed = true;
+            _printNote = $"Order #{created.Id} · sent · the bag label did not print · {Reason(ex)}";
         }
     }
 

@@ -153,7 +153,7 @@
    and a terminal about to die mid-service is one. The threshold is a policy
    literal recorded in Part II-A, not a token: it is a value a condition tests
    rather than a value a declaration takes, which is the same reason the
-   handheld step's 800 stays a literal (§12). */
+   width bands' 770 and 1000 stay literals (§12). */
 .shell__battery--low {
     color: var(--upos-status-late-text);
 }
@@ -218,22 +218,59 @@
     min-height: 0;
 }
 
-/* ─── Handheld ───────────────────────────────────────────────────────────────
-   Part II-A · Order entry · Handheld, provisional. One step at 800px of shell
-   width — 170px rail + 380px cart + 44px grid padding + one 190px tile = 784px
-   before the screen holds an item, rounded up. The 800 stays a literal: a
-   custom property cannot be read inside a container condition, so a token for
-   it would be a token nothing could spend (§12).
+/* ─── Narrow: tablet portrait and handheld ───────────────────────────────────
+   Part II-A · Order entry · Width bands. Two steps, both container queries on
+   the shell's own inline size, and both written as max-width so they nest: the
+   1000px block holds what the tablet and the handheld agree on, the 800px block
+   holds what only the handheld does, and the second is written after the first
+   so it wins where they disagree. Overlapping bands rather than an exclusive
+   pair is deliberate — a shell 799.5px wide matches an inclusive max-width:1000
+   and misses an exclusive min-width:800, and a band scheme with a half-pixel
+   hole in it is a band scheme that renders the wide layout on a narrow screen.
 
-   The shell's own share of the rule is the top bar. The bottom nav takes its
-   own rule, and it takes it in BottomNav.razor.css where the strip is drawn —
-   the labels lay out away and the icon steps 17px -> 20px. The note that used
-   to stand here said the nav needed no rule because five items into 393px is
-   72px each; that divided the strip as though flex:1 could shrink an item to
-   any width, which it cannot. The measurement and the three treatments weighed
-   against it are in BottomNav.razor.css and in the handbook. */
+   1000px is where the 1440 design stops fitting. Its cheapest measure is the
+   grid: 170px rail + 380px cart + 44px of grid padding + two 190px tiles and
+   their 16px gap is 990px, and under that the three-pane layout draws a single
+   stretched tile in a column that is neither a grid nor a list. Rounded up to
+   the nearest hundred, so the number reads as what it is. The top bar agrees
+   from inside the band: measured in the preview, its 1440 content wraps at
+   946px.
 
-@container upos-shell (max-width: 800px) {
+   770px is where the tablet's two-pane stops fitting in turn: a 340px cart, the
+   page step at each grid edge and two 190px tiles with their 16px gap is 764px,
+   rounded up to the nearest ten. Up and not down, because the rounding has to
+   fall on the side that keeps the band honest — a tablet band reaching below
+   764 draws the same single stretched tile the 1000 step exists to remove. It
+   replaces the old handheld step of 800, which was the three-pane's own floor
+   (170 + 380 + 44 + one 190px tile = 784, rounded up) and is no longer the
+   question being asked: 800 is the 10.1" tablet in portrait, max-width is
+   inclusive, and a step at 800 hands the named tablet the phone's layout.
+
+   Both stay literals. A custom property cannot be read inside a container
+   condition, so a token for either would be a token nothing could spend (§12).
+
+   The shell's own share of the rules is the top bar. The bottom nav takes its
+   own, in BottomNav.razor.css where the strip is drawn, and it takes it at 770
+   and not at 1000: the five labels floor the strip at 442.93px, which overflows
+   393px and fits 800px with 329px to spare. */
+
+@container upos-shell (max-width: 1000px) {
+
+    /* Every blocked chip takes its short label. The bar is measured to wrap at
+       946px, so this is forced across most of the band and chosen over the top
+       of it: rather than a third threshold 54px above the break, the band that
+       stops drawing the category rail also stops drawing the long form of a
+       label whose short form names the same gap. */
+    .shell__blocked-wide {
+        display: none;
+    }
+
+    .shell__blocked-narrow {
+        display: inline;
+    }
+}
+
+@container upos-shell (max-width: 770px) {
 
     /* 76px -> 58px, and the page step for side padding. The glass treatment is
        unchanged: this is still the one element that spends --upos-blur-glass. */
@@ -249,15 +286,6 @@
         font: 700 13px/1.2 Archivo, system-ui, sans-serif;
         overflow: hidden;
         text-overflow: ellipsis;
-    }
-
-    /* Every blocked chip that survives here takes its short label. */
-    .shell__blocked-wide {
-        display: none;
-    }
-
-    .shell__blocked-narrow {
-        display: inline;
     }
 
     /* The server name drops. Of the right-hand items it is the one whose reader

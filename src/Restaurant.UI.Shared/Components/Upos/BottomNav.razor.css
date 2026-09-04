@@ -74,8 +74,11 @@
 }
 
 /* ─── Handheld ───────────────────────────────────────────────────────────────
-   Part II-A · Order entry · Handheld, provisional. One step at 800px of shell
-   width, on the container TerminalShell.razor.css names. The strip only takes
+   Part II-A · Order entry · Handheld, provisional. The handheld step, 770px of
+   shell width, on the container TerminalShell.razor.css names. It is the
+   handheld's step and not the tablet's: the five labels floor the strip at
+   442.93px, which overflows 393px and fits 800px with 329px to spare, so the
+   tablet band keeps its words. The strip only takes
    this rule inside that container, so the recipe's other call sites cannot
    match a container they do not sit in — the same argument MenuItemCard follows
    one screen over, and the reason no component here takes a width flag.
@@ -121,7 +124,7 @@
    from the document (BottomNav.razor carries it as an aria-label at every
    width). */
 
-@container upos-shell (max-width: 800px) {
+@container upos-shell (max-width: 770px) {
 
     /* --upos-space-gap-row is §11's floor for adjacent targets and the strip's
        own gap already sits on it, so only the side padding moves — to the same

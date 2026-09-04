@@ -1,5 +1,6 @@
-using Restaurant.Blazor.Components;
+﻿using Restaurant.Blazor.Components;
 using Restaurant.UI.Shared.Services;
+using Restaurant.UI.Shared.Services.Printing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +61,22 @@ builder.Services.AddScoped<DashboardDataSource>();
 // reading in the blocked treatment, which is what keeps the preview honest about
 // being a preview.
 builder.Services.AddSingleton<IDeviceStatus, UnknownDeviceStatus>();
+
+// The same shell now follows the OS theme on the device (Part II-A · Order entry ·
+// Dark). This host has no OS theme worth reading: it is a browser, and the theme
+// on this page is already the rail toggle's to set. Registering the answer that
+// says so is what keeps the two from fighting — the preview renders the terminal
+// in whichever theme the person working on it has chosen, and nothing stamps
+// data-theme over their choice.
+builder.Services.AddSingleton<ISystemTheme, UnknownSystemTheme>();
+
+// The same preview renders the printer setup screen, and a desktop browser has no
+// Bluetooth radio to reach a printer with. It registers the answer that says so
+// (handbook section 12). Nothing here invents a paired device: a preview that
+// reported a printer, accepted a test print and drew a green chip would be the one
+// placeholder in this product a person acts on - they would go to the venue
+// believing the pairing worked.
+builder.Services.AddSingleton<IReceiptPrinter, UnavailableReceiptPrinter>();
 
 var app = builder.Build();
 

@@ -53,23 +53,24 @@
        It changes one thing: the width and height of the box the shell stands
        in. It does not scale, zoom, or restyle anything inside that box, so the
        shell lays out at each size exactly as it would on a panel of that size.
-       That works because Part II-A's handheld step is a container query on the
-       shell's own inline size (`@@container upos-shell (max-width: 800px)`),
-       not a viewport media query — resizing this frame exercises the same rule
-       the device does, and the browser window is irrelevant to it.
+       That works because Part II-A's width bands are container queries on the
+       shell's own inline size — `@@container upos-shell (max-width: 1000px)` for
+       the tablet's two panes and `(max-width: 770px)` for the handheld — and not
+       viewport media queries. Resizing this frame exercises the same rules the
+       device does, and the browser window is irrelevant to them.
 
-       The branch readout under the frame is a mirror of that condition, not a
-       readout of it: the badge sits outside the shell, so it cannot query the
+       The branch readout under the frame is a mirror of those conditions, not a
+       readout of them: the badge sits outside the shell, so it cannot query the
        shell's container, and .tp__stage declares a container of its own at the
-       same 800px threshold and exactly the shell's width. The two are kept
-       honest by the fact that the stage is the shell's parent box — same width,
-       same condition, same answer.
+       same two thresholds and exactly the shell's width. They are kept honest by
+       the fact that the stage is the shell's parent box — same width, same
+       conditions, same answer.
 
-       The 800px step is an edge and the switcher shows it as one. The 10.1"
-       tablet in portrait is 800px wide, the condition is `max-width: 800px`,
-       and `max-width` is inclusive — so 800 lands on the HANDHELD side, and a
-       tablet gets the degraded single-column phone layout. That is what the
-       rule as written does; the presets say so rather than nudging the number. *@
+       The 10.1" tablet in portrait is 800px wide, which is why the tablet band
+       exists and why the handheld step moved off 800: `max-width` is inclusive,
+       so a step at 800 put the named tablet on the phone's layout. It is at 770
+       now, which is the two-pane's own floor rounded up, and the tablet preset
+       lands 30px clear of it. *@
 
     <div class="tp__tool">
         <div class="tp__tool-head">
@@ -116,20 +117,20 @@
             <p class="tp__branch">
                 <span class="tp__branch-line tp__branch-line--wide">
                     <span class="tp__branch-tag tp__branch-tag--wide">WIDE</span>
-                    <code>@@container upos-shell (max-width: 800px)</code> does not match at
-                    @(_active.Width)px &mdash; the full three-pane order entry.
+                    Neither <code>@@container upos-shell (max-width: 1000px)</code> nor
+                    <code>(max-width: 770px)</code> matches at @(_active.Width)px &mdash; the full
+                    three-pane order entry.
+                </span>
+                <span class="tp__branch-line tp__branch-line--tablet">
+                    <span class="tp__branch-tag tp__branch-tag--tablet">TABLET</span>
+                    <code>@@container upos-shell (max-width: 1000px)</code> matches at
+                    @(_active.Width)px and <code>(max-width: 770px)</code> does not &mdash; two
+                    panes, the rail as a chip row and the check docked at 340px.
                 </span>
                 <span class="tp__branch-line tp__branch-line--handheld">
                     <span class="tp__branch-tag tp__branch-tag--handheld">HANDHELD</span>
-                    <code>@@container upos-shell (max-width: 800px)</code> matches at
+                    <code>@@container upos-shell (max-width: 770px)</code> matches at
                     @(_active.Width)px &mdash; the provisional degraded single column.
-                    @if (_active.Width == 800)
-                    {
-                        <strong>
-                            800 is the step itself, and <code>max-width</code> is inclusive, so a
-                            tablet this wide gets the phone layout.
-                        </strong>
-                    }
                 </span>
             </p>
         </div>
@@ -192,8 +193,8 @@
         // A 10.1" Android tablet is 1280x800 CSS px whichever panel it ships: a 1920x1200
         // screen is ~224ppi, which Android buckets to hdpi and a dpr of 1.5, and a 1280x800
         // screen is ~149ppi, which is mdpi and a dpr of 1. Both land on the same viewport.
-        // Portrait is that pair rotated — and 800 is the step, which is why this preset is
-        // the one the branch readout has something extra to say about.
+        // Portrait is that pair rotated, and it is the case Part II-A's tablet band is
+        // designed against: two panes, the rail as a chip row, the check docked at 340px.
         new("10.1\" tablet · portrait", "1280×800 CSS class, rotated · panel class", 800, 1280),
         new("10.1\" tablet · landscape", "1920×1200 at dpr 1.5 · panel class", 1280, 800),
 

@@ -1,4 +1,4 @@
-@inject IJSRuntime JS
+﻿@inject IJSRuntime JS
 
 @* Back-office rail — handbook Part II-B preamble and Part III · SideNav.
    224px, --upos-grad-dark, --upos-radius-panel, sticky at top:14px. The nav
@@ -44,6 +44,22 @@
                 <path d="M8 21h8M12 17v4" />
             </svg>
             <span>Terminal preview</span>
+        </NavLink>
+
+        @* Also a development preview, and a separate route rather than a MORE
+           tap inside the terminal preview: that page is a frame at a chosen
+           device size, and navigating it would hide the screen this one exists
+           to show. This host has no Bluetooth radio, so the screen below is the
+           real no-printer state. *@
+        <NavLink class="u-nav-item" ActiveClass="is-active" href="preview/printer"
+                 title="Development preview of the MAUI printer setup screen">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 9V2h12v7" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" rx="1" />
+            </svg>
+            <span>Printer preview</span>
         </NavLink>
 
         <span class="u-nav-item is-disabled" aria-disabled="true"

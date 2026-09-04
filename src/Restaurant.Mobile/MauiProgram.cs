@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Restaurant.Mobile.Services;
+using Restaurant.Mobile.Services.Printing;
 using Restaurant.UI.Shared.Services;
+using Restaurant.UI.Shared.Services.Printing;
 using Microsoft.EntityFrameworkCore;
 
 namespace Restaurant.Mobile;
@@ -68,6 +70,37 @@ public static class MauiProgram
         // there is exactly one device behind them. It is disposed with the
         // container.
         builder.Services.AddSingleton<IDeviceStatus, MauiDeviceStatus>();
+
+        // The terminal follows Android's own light/dark setting, and it does that
+        // through the same split: Restaurant.UI.Shared asks the question as
+        // ISystemTheme and cannot answer it, so this host registers the reader for
+        // Application.RequestedTheme (handbook §12, Part II-A · Order entry ·
+        // Dark). There is no manual toggle on the terminal to register alongside
+        // it — the OS setting is the whole of the control.
+        //
+        // Singleton for the same reason: one platform event subscription, one
+        // device behind it, disposed with the container.
+        builder.Services.AddSingleton<ISystemTheme, MauiSystemTheme>();
+
+        // Printing (handbook Part II-A, Printer setup and section 12). Same shape as
+        // IDeviceStatus one block up, and for the same reason: Restaurant.UI.Shared has
+        // no MAUI reference and no Android binding, so it cannot open a Bluetooth socket
+        // any more than it could read a battery. It owns IReceiptPrinter and
+        // IPrinterTransport; this host supplies the radio.
+        //
+        // The seam is IPrinterTransport. A network printer - the TSP143IV-UEWB has
+        // Wi-Fi and Ethernet on the same box - is a second implementation of that one
+        // interface registered here, and nothing above it moves: not the ticket bytes,
+        // not the state machine, not the setup screen.
+        //
+        // Singletons, not scoped: there is one radio and one remembered pairing behind
+        // them, and the print gate that serialises jobs has to be the same gate for
+        // every caller or two labels interleave down one socket.
+        builder.Services.AddSingleton<IPrinterPreference, MauiPrinterPreference>();
+        builder.Services.AddSingleton<IPrinterTransport, BluetoothPrinterTransport>();
+        builder.Services.AddSingleton<IReceiptPrinter>(sp => new TransportReceiptPrinter(
+            sp.GetRequiredService<IPrinterTransport>(),
+            sp.GetRequiredService<IPrinterPreference>()));
 
         // Add local SQLite database (we'll create this next)
         var dbPath = Path.Combine(FileSystem.AppDataDirectory, "restaurant.db");

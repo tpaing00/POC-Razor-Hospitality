@@ -207,8 +207,10 @@
     gap: var(--upos-space-gap-chip);
 }
 
-/* The handheld line is the one that is hidden above the step; below it they
-   swap. Both are in the markup, so the text is selectable and greppable. */
+/* The wide line is the one that shows above both steps; the other two are
+   hidden until their band matches. All three are in the markup, so the text is
+   selectable and greppable rather than living in a CSS content string. */
+.tp__branch-line--tablet,
 .tp__branch-line--handheld {
     display: none;
 }
@@ -227,20 +229,37 @@
     background: var(--upos-accent);
 }
 
-/* Not a status colour. §4 reserves red for a problem that exists and orange for
-   a thing in flight, and neither branch is either: both are correct branches of
-   a correct rule, and only one of them is on screen. So the pair is told apart
-   by the kit's two darks — the accent above the step, the dark panel below it —
-   which reads at a glance without claiming anything is wrong. */
+/* Not status colours. §4 reserves red for a problem that exists and orange for
+   a thing in flight, and no branch is either: all three are correct branches of
+   a correct rule, and only one of them is on screen. So they are told apart by
+   the accent, one step of the blue rotation and the kit's dark panel, which
+   reads at a glance without claiming anything is wrong. The rotation's job is
+   telling series apart, which is exactly what is being asked of it here. */
+.tp__branch-tag--tablet {
+    background: var(--upos-value-4);
+}
+
 .tp__branch-tag--handheld {
     background: var(--upos-panel-dark);
 }
 
-/* The mirror of Part II-A's step, at the same 800px and on the same width.
-   max-width is inclusive, so a stage exactly 800px wide reports HANDHELD — and
-   so does the shell inside it, which is the point of stating it here. */
-@container upos-preview-stage (max-width: 800px) {
+/* The mirror of Part II-A's two steps, at the same widths, on the same box and
+   in the same order — the narrower condition written second so it overrides the
+   wider one, exactly as the shell's own blocks do. max-width is inclusive at
+   both ends, so a stage exactly 1000px wide reports TABLET and one exactly
+   770px wide reports HANDHELD, which is what the shell inside it does. */
+@container upos-preview-stage (max-width: 1000px) {
     .tp__branch-line--wide {
+        display: none;
+    }
+
+    .tp__branch-line--tablet {
+        display: inline-flex;
+    }
+}
+
+@container upos-preview-stage (max-width: 770px) {
+    .tp__branch-line--tablet {
         display: none;
     }
 
