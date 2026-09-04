@@ -142,7 +142,9 @@ public class TransportReceiptPrinterTests
         Assert.False(outcome.Printed);
         Assert.Equal(PrinterState.Unreachable, printer.Condition.State);
         // §10: the cause and the next move, in one line.
-        Assert.Contains("check it is powered on and in range", outcome.Condition.Message);
+        // "In range" was true when the only transport was a radio. The same sentence is
+        // now shown for a network printer, so it says what is true of either.
+        Assert.Contains("check it is switched on and reachable from this host", outcome.Condition.Message);
         Assert.Contains("socket closed by peer", outcome.Condition.Message);
     }
 

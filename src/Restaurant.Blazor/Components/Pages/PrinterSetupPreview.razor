@@ -1,4 +1,6 @@
 @page "/preview/printer"
+@using Restaurant.UI.Shared.Services.Printing
+@inject UnavailableReceiptPrinter NoPrinter
 
 @* A development preview of a MAUI screen, not a back-office destination.
 
@@ -8,13 +10,18 @@
    can be worked on without an emulator, in the same way /preview/terminal
    exists. It ships to no venue.
 
-   **This preview cannot pair anything and does not pretend to.** A desktop
-   browser has no Bluetooth radio, so Restaurant.Blazor registers
-   UnavailableReceiptPrinter (Program.cs) — the answer §12 calls for, in the same
+   **This preview cannot pair anything and does not pretend to.** It is handed
+   UnavailableReceiptPrinter explicitly — the answer §12 calls for, in the same
    shape as UnknownDeviceStatus: it finds nothing, selects nothing, refuses to
    print, and says the refusal is about this host rather than about the printer.
-   What is on screen below is therefore the real no-printer state, drawn by the
-   real component, and it is the state a terminal is in before anybody has paired
+
+   The override is not decoration. This host now registers real transports for the
+   back office at /printers, so without it, opening this preview would start a scan
+   of the venue's network and the screen would stop being the state this page
+   exists to show. The preview shows a terminal before anybody has paired anything,
+   which is a different screen from the back office's and stays one. What is on
+   screen below is therefore the real no-printer state, drawn by the real
+   component, and it is the state a terminal is in before anybody has paired
    anything.
 
    The separate route rather than a MORE tap inside /preview/terminal is
@@ -31,15 +38,17 @@
         <p class="pp__note">
             The <code>PrinterSetupScreen</code> <code>Restaurant.Mobile</code> renders behind
             <code>MORE</code>, stood up at the terminal&rsquo;s 1440&times;900. This host registers
-            <code>UnavailableReceiptPrinter</code>, so every control below is the honest
-            no-printer state and nothing here can reach a printer.
+            <code>UnavailableReceiptPrinter</code> to this screen, so every control below is the
+            honest no-printer state and nothing here can reach a printer. The back office&rsquo;s own
+            printer destination is <code>/printers</code>, and it is a different screen doing a
+            different job.
         </p>
     </header>
 
     <div class="pp__frame">
         <div class="pp__device">
             <TerminalShell ActiveDestination="more">
-                <PrinterSetupScreen TerminalId="Counter 2" />
+                <PrinterSetupScreen TerminalId="Counter 2" PrinterOverride="NoPrinter" />
             </TerminalShell>
         </div>
     </div>
@@ -54,7 +63,7 @@
     <div class="pp__frame pp__frame--handheld">
         <div class="pp__device pp__device--handheld">
             <TerminalShell ActiveDestination="more">
-                <PrinterSetupScreen TerminalId="Counter 2" />
+                <PrinterSetupScreen TerminalId="Counter 2" PrinterOverride="NoPrinter" />
             </TerminalShell>
         </div>
     </div>

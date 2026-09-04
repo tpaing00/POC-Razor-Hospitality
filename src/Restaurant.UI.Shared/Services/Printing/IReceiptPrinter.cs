@@ -31,6 +31,34 @@ public interface IReceiptPrinter
     /// reason is on <see cref="Condition"/>.</summary>
     bool IsSupported { get; }
 
+    /// <summary>
+    /// One row per transport, saying whether it can be used and why not when it
+    /// cannot.
+    ///
+    /// **This is the property that stops "no radio on this host" being drawn as "no
+    /// printers found".** The terminal has one transport and <see cref="IsSupported"/>
+    /// carries the whole answer; the back office has two or more, is supported when
+    /// either works, and needs somewhere to say that the network is searching while
+    /// the Bluetooth radio is absent. A screen renders these rows whenever there is
+    /// more than one, and renders nothing extra when there is one.
+    /// </summary>
+    IReadOnlyList<TransportAvailability> Transports { get; }
+
+    /// <summary>Whether any transport can take an address a person typed. False on the
+    /// terminal, where a Bluetooth bond has no address to type.</summary>
+    bool SupportsAddressEntry { get; }
+
+    /// <summary>
+    /// Record a printer at an address somebody read off its self-test page, and select
+    /// it. The degradation path for a network where multicast does not cross.
+    ///
+    /// Never throws: an address that will not parse leaves the condition carrying what
+    /// is wrong with it. The device is selected and reads
+    /// <see cref="PrinterState.NotTested"/>, because typing an address proves the
+    /// address is well formed and nothing else.
+    /// </summary>
+    Task AddByAddressAsync(string address, CancellationToken cancellationToken = default);
+
     /// <summary>Ask the transport what it can see. Never throws: a discovery that fails
     /// leaves the condition carrying why.</summary>
     Task DiscoverAsync(CancellationToken cancellationToken = default);
@@ -84,6 +112,17 @@ public sealed class UnavailableReceiptPrinter : IReceiptPrinter
     public IReadOnlyList<PrinterDevice> Found => Array.Empty<PrinterDevice>();
 
     public bool IsSupported => false;
+
+    /// <summary>One row, saying the same thing the condition says. A host with no
+    /// printer has exactly one fact to report about transports, and it is that it has
+    /// none.</summary>
+    public IReadOnlyList<TransportAvailability> Transports { get; } =
+        new[] { new TransportAvailability("None", false, NoHost.Message) };
+
+    public bool SupportsAddressEntry => false;
+
+    public Task AddByAddressAsync(string address, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 
     public Task DiscoverAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 

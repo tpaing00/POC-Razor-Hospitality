@@ -1,0 +1,64 @@
+@page "/printers"
+@using Restaurant.UI.Shared.Components.Screens
+
+@* Back office · Printers. Discover a printer over the network or the host's radio,
+   choose one, and print a test label.
+
+   **WHOSE RADIO AND WHOSE NETWORK.** Restaurant.Blazor is Blazor Server: the C#
+   behind this page runs in the ASP.NET process, not in the browser. So what this
+   page scans is the machine serving the back office — the counter PC, the mini-PC
+   in the office, the POS device itself where the back office is served from it —
+   and never the laptop the manager happens to be reading this on. That is not a
+   limitation to be hidden; it is the fact that decides whether a scan finds
+   anything, so the screen states it in a line rather than leaving somebody to work
+   it out from an empty list.
+
+   **Why this reuses PrinterSetupScreen rather than getting its own.** The job is
+   the same job — list what can be reached, choose one, prove it prints — and every
+   state on it is one a transport can prove. What differs between the two hosts is
+   six sentences and whether a typed address is offered, and those are parameters.
+   Building a second screen would mean two places to keep the seven states honest
+   in, which is exactly how a NOT TESTED becomes a READY nobody earned.
+
+   What is genuinely different is the frame: the terminal's screen is inside
+   TerminalShell with its 76px bar and 78px nav, and this one is a back-office
+   .panel in the rail layout. That is this page's job and not the screen's.
+
+   **Opening this page scans nothing.** A scan here is a multicast query and, where
+   that finds nothing, a bounded sweep of the subnet — and doing that on every page
+   open, or every time a Blazor circuit reconnects, is exactly what a restaurant
+   network must not get. It waits to be asked. The terminal keeps its scan on open,
+   because reading a bonded list the platform already holds costs the room nothing.
+
+   This page does NOT record which terminal claims which printer. That is the
+   Devices registry, it is a new table, and it is deliberately the next task and
+   not this one. What is selected here is held for as long as this server process
+   and no longer, and the screen says nothing that implies otherwise. *@
+
+<PageTitle>Printers</PageTitle>
+
+<section class="panel">
+    <PrinterSetupScreen TerminalId="Back office"
+                        Kicker="BACK OFFICE · PRINTERS"
+                        Note="@Note"
+                        ListLabel="PRINTERS THIS HOST CAN REACH"
+                        EmptyHint="@EmptyHint"
+                        HostNote="@HostNote"
+                        ScanOnOpen="false"
+                        ShowLimits="false" />
+</section>
+
+@code {
+    private const string Note =
+        "Printers this back office can reach, over the venue network and over the radio of the " +
+        "machine serving this page.";
+
+    private const string HostNote =
+        "These are the network and the radio of the machine serving the back office, not of the " +
+        "computer you are reading this on. A printer beside you is only found here if this page is " +
+        "served from the machine beside it.";
+
+    private const string EmptyHint =
+        "Nothing found yet. Check the printer is powered on and on the same network as this host, " +
+        "then scan — or add it by the address on its self-test page.";
+}

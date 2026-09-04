@@ -68,7 +68,56 @@ public sealed class TransportReceiptPrinter : IReceiptPrinter
 
     public bool IsSupported => _transport.IsAvailable(out _);
 
+    /// <summary>
+    /// Straight through to the transport. A single transport reports one row; a
+    /// composite reports one per member, which is how the back office says the network
+    /// is working and the radio is missing without either sentence hiding the other.
+    /// </summary>
+    public IReadOnlyList<TransportAvailability> Transports => _transport.Describe();
+
+    public bool SupportsAddressEntry =>
+        _transport is IAddressablePrinterTransport addressable && addressable.AcceptsAddress;
+
     public event EventHandler? Changed;
+
+    /// <summary>
+    /// Parse what somebody typed, put it in the list, and select it.
+    ///
+    /// It goes into <see cref="Found"/> as well as into the selection because the list
+    /// is what the screen draws, and an address that vanished the moment it was
+    /// accepted would look like it had been rejected. It joins the list rather than
+    /// replacing it: a manually added printer and a discovered one are the same kind
+    /// of thing once they are on screen, and only the test label separates them.
+    /// </summary>
+    public async Task AddByAddressAsync(string address, CancellationToken cancellationToken = default)
+    {
+        if (_transport is not IAddressablePrinterTransport addressable)
+        {
+            Set(new PrinterCondition(
+                PrinterState.Failed,
+                "This host cannot take a typed address · pair the printer through the platform instead"));
+            return;
+        }
+
+        try
+        {
+            var device = await addressable.ResolveAsync(address, cancellationToken).ConfigureAwait(false);
+
+            var merged = _found.Where(d => d.Id != device.Id).ToList();
+            merged.Add(device);
+            _found = merged.OrderBy(d => d.Transport, StringComparer.Ordinal)
+                .ThenBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            await SelectAsync(device, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // The transport's own sentence, not a paraphrase: it is the only thing that
+            // knows what is wrong with the address.
+            Set(new PrinterCondition(PrinterState.Failed, Reason(ex)));
+        }
+    }
 
     public async Task DiscoverAsync(CancellationToken cancellationToken = default)
     {
@@ -110,9 +159,11 @@ public sealed class TransportReceiptPrinter : IReceiptPrinter
         // the device; only a byte that went out and came back proves it prints.
         Set(new PrinterCondition(
             PrinterState.NotTested,
-            device.IsPaired
-                ? NotTestedLine
-                : "This printer is not paired with the tablet yet. Printing will raise Android's pairing prompt."));
+            // The transport's own sentence where it has one. A line about Android's
+            // pairing prompt written here would be shown over a network printer, which
+            // has no pairing and no prompt — the message belongs where the knowledge
+            // is, which is the same rule PrinterCondition already states.
+            device.PairingNote is { Length: > 0 } note ? note : NotTestedLine));
 
         return Task.CompletedTask;
     }
@@ -170,9 +221,13 @@ public sealed class TransportReceiptPrinter : IReceiptPrinter
             }
             catch (Exception ex)
             {
+                // "In range" was true when the only transport was a radio. It is not
+                // true of an address on a network, and this one sentence is now shown
+                // for both — so it says the thing that is true of either: the printer
+                // has to be on, and this host has to be able to get to it.
                 return Fail(new PrinterCondition(
                     PrinterState.Unreachable,
-                    $"Printer unreachable · check it is powered on and in range ({Reason(ex)})"));
+                    $"Printer unreachable · check it is switched on and reachable from this host ({Reason(ex)})"));
             }
 
             try

@@ -149,7 +149,12 @@ public sealed class BluetoothPrinterTransport : IPrinterTransport
             {
                 lock (results)
                 {
-                    results[address] = new PrinterDevice(address, device.Name ?? address, IsPaired: false);
+                    results[address] = new PrinterDevice(
+                        address,
+                        device.Name ?? address,
+                        IsPaired: false,
+                        PairingNote: "This printer is not paired with the tablet yet. Printing will raise " +
+                                     "Android's pairing prompt.");
                 }
             }
         });

@@ -42,6 +42,66 @@ public interface IPrinterTransport
     /// than paraphrasing a fault it did not see.
     /// </summary>
     Task<IPrinterConnection> ConnectAsync(string deviceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// This transport's availability as a row the screen can render, which for a
+    /// single transport is <see cref="IsAvailable"/> restated and for a composite is
+    /// one row per member.
+    ///
+    /// **The composite is why this is not just <see cref="IsAvailable"/>.** A back
+    /// office running a network transport and a Bluetooth one is available when
+    /// either works, so the composite's single bool is true while the radio is
+    /// missing — and a screen with only that bool would have nowhere to say the radio
+    /// is missing, leaving a person to read an empty list as "no printers in the
+    /// building". Rows keep the two facts apart.
+    ///
+    /// The default is the honest answer for a transport that is one thing, so no
+    /// existing implementation has to write it.
+    /// </summary>
+    IReadOnlyList<TransportAvailability> Describe()
+    {
+        var available = IsAvailable(out var reason);
+        return new[] { new TransportAvailability(Name, available, available ? null : reason) };
+    }
+}
+
+/// <summary>
+/// A transport that can also take an address a person typed.
+///
+/// **Discovery on a restaurant network is allowed to fail, and this is what it fails
+/// to.** Multicast is dropped between VLANs, blocked by client isolation on a
+/// guest-facing access point, and absent entirely on a printer somebody gave a static
+/// address on a different subnet. In every one of those cases a person can still read
+/// the address off the printer's self-test page, and a discovery design that has no
+/// answer for that is a design that strands them.
+///
+/// It is a separate interface rather than a member of <see cref="IPrinterTransport"/>
+/// because typing a Bluetooth MAC is not a thing anybody should be asked to do: the
+/// bond is the platform's record and there is no address to read off the printer.
+/// A transport that cannot honestly accept a typed address does not implement this,
+/// and the screen does not offer the field.
+/// </summary>
+public interface IAddressablePrinterTransport : IPrinterTransport
+{
+    /// <summary>
+    /// Turn what a person typed into a device, or throw with a sentence saying what
+    /// is wrong with it.
+    ///
+    /// **It validates and does not probe.** A printer that is switched off at
+    /// half past four still has the address it will have at five, and refusing to
+    /// record it because nothing answered would be the screen deciding a fault it has
+    /// not diagnosed. The device comes back <see cref="PrinterState.NotTested"/> like
+    /// every other selection, and the test label is what proves it.
+    /// </summary>
+    Task<PrinterDevice> ResolveAsync(string address, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Whether an address typed right now would go anywhere. For a transport that is
+    /// one thing this is simply whether it is available; a composite overrides it,
+    /// because a composite is available when any member is and only some members take
+    /// addresses.
+    /// </summary>
+    bool AcceptsAddress => IsAvailable(out _);
 }
 
 /// <summary>

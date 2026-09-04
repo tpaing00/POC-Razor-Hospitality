@@ -167,6 +167,80 @@
     color: var(--upos-ink);
 }
 
+/* ─── Transports ─────────────────────────────────────────────────────────── */
+
+/* One row per transport, in the same geometry as the paired-printer row, because
+   they are the same shape of statement: a name on the left and what is known
+   about it on the right. */
+.ps__transports {
+    display: flex;
+    flex-direction: column;
+    gap: var(--upos-space-gap-row);
+}
+
+.ps__transport {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--upos-space-gap-inline);
+}
+
+.ps__transport-id {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* Two tags on one row, and the transport reads first. A row carrying both is
+   saying where the printer was found and what is known about it, in that order. */
+.ps__row-tags {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-chip);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* ─── An address somebody typed ──────────────────────────────────────────── */
+
+.ps__field {
+    display: flex;
+    align-items: center;
+    gap: var(--upos-space-gap-row);
+    flex-wrap: wrap;
+}
+
+/* The one input on this screen. It takes the mono role because what goes in it is
+   an address — the same reasoning .ps__device-addr runs on, so the thing typed and
+   the thing listed look like the same kind of thing. --upos-touch-terminal is
+   §11's floor and applies to a field a finger has to land in. */
+.ps__input {
+    flex: 1 1 200px;
+    min-width: 0;
+    min-height: var(--upos-touch-terminal);
+    padding: 0 var(--upos-space-gap-inline);
+    border: 1px solid var(--upos-border);
+    border-radius: var(--upos-radius-inset);
+    background: var(--upos-surface);
+    color: var(--upos-ink);
+    font: 700 13px/1 ui-monospace, Menlo, monospace;
+}
+
+.ps__input::placeholder {
+    color: var(--upos-ink-subtle);
+    font-weight: 400;
+}
+
+.ps__input:focus-visible {
+    outline: 2px solid var(--upos-accent);
+    outline-offset: 1px;
+}
+
+.ps__input:disabled {
+    color: var(--upos-ink-subtle);
+}
+
 /* ─── Lines ──────────────────────────────────────────────────────────────── */
 
 /* A statement, not an apology (§10). */

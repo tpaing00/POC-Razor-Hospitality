@@ -55,7 +55,55 @@ public enum PrinterState
 /// A bonded device connects without a system dialog; an unbonded one raises Android's
 /// pairing prompt on the first connect, which is a thing the screen has to be able to
 /// say before it happens.</param>
-public sealed record PrinterDevice(string Id, string Name, bool IsPaired = true);
+/// <param name="Transport">Which transport found it — "Bluetooth", "Network". Empty
+/// on a host that runs one transport, where naming it would be noise. The back
+/// office runs several at once and a person choosing between two printers with
+/// similar names needs to know which one is on the network and which is on the
+/// radio.</param>
+/// <param name="Address">The address to show a person, when that is not the same as
+/// <paramref name="Id"/>. Aggregating several transports makes <paramref name="Id"/>
+/// a routing key with a transport prefix on it, which is correct for
+/// <see cref="IPrinterTransport.ConnectAsync"/> and wrong on a screen; this is the
+/// bare MAC or host and port. Empty means <paramref name="Id"/> is already
+/// showable.</param>
+/// <param name="PairingNote">What a person has to do before this device will accept a
+/// job, in the transport's own words, or null where nothing is needed.
+///
+/// **It is the transport's sentence because pairing means different things.** On
+/// Android an unbonded printer raises the system's pairing prompt on the first write,
+/// so the person can just print. On a Windows host nothing prompts and they have to
+/// pair it in Settings on the machine serving the page. On the network there is no
+/// pairing at all — an address is either answered or it is not, and the test label is
+/// what asks. A single sentence written above the transports would be wrong for two of
+/// those three.</param>
+public sealed record PrinterDevice(
+    string Id,
+    string Name,
+    bool IsPaired = true,
+    string Transport = "",
+    string Address = "",
+    string? PairingNote = null)
+{
+    /// <summary>The address as a person reads it. Never parsed, and never used to
+    /// route a connection — that is <see cref="Id"/>'s job.</summary>
+    public string Display => Address is { Length: > 0 } ? Address : Id;
+}
+
+/// <summary>
+/// Whether one transport can be used right now, and why not when it cannot.
+///
+/// **This exists so that "this host has no Bluetooth radio" is never rendered as
+/// "no printers found".** They are different facts: the first is about the host and
+/// a person can act on it, the second is about the room. A back office aggregating
+/// a network transport and a Bluetooth one has to be able to say that the network
+/// found two printers and the radio is missing, in the same breath, without either
+/// sentence standing in for the other.
+/// </summary>
+/// <param name="Name">The transport's own name.</param>
+/// <param name="Available">Whether it can be used at all right now.</param>
+/// <param name="Reason">One line naming the cause and the next move (§10), or null
+/// when the transport is available.</param>
+public sealed record TransportAvailability(string Name, bool Available, string? Reason);
 
 /// <summary>
 /// The printer's condition as one value: the state, and the sentence the screen
